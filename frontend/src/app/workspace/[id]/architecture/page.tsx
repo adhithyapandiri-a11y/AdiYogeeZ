@@ -2,21 +2,24 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useParams } from "next/navigation";
-import { FolderTree, GitFork, Workflow, Boxes, Cpu, ArrowUpRight } from "lucide-react";
+import { FolderTree, GitFork, Workflow, Boxes, Cpu, ArrowUpRight, Activity, Brain } from "lucide-react";
+import ObsidianConstellationGraph from "@/components/architecture/ObsidianConstellationGraph";
 import { ProjectStructureView } from "@/components/architecture/ProjectStructureView";
 import { DependencyMapView } from "@/components/architecture/DependencyMapView";
 import { FeatureFlowView } from "@/components/architecture/FeatureFlowView";
 import NodeDetailsDrawer from "@/components/architecture/NodeDetailsDrawer";
 import CodeViewerModal from "@/components/common/CodeViewerModal";
-import { getRepository } from "@/lib/api";
-import { Repository } from "@/lib/types";
+import { getRepository, getObsidianGraph } from "@/lib/api";
+import { Repository, ObsidianGraphData } from "@/lib/types";
 
 function ArchitectureContent() {
   const params = useParams();
   const repoId = Number(params?.id);
 
-  const [viewMode, setViewMode] = useState<"structure" | "dependency" | "flow">("structure");
+  const [viewMode, setViewMode] = useState<"neural" | "structure" | "dependency" | "flow">("neural");
   const [repo, setRepo] = useState<Repository | null>(null);
+  const [neuralData, setNeuralData] = useState<ObsidianGraphData | null>(null);
+  const [loadingNeural, setLoadingNeural] = useState(false);
 
   // Inspected node for drawer
   const [inspectedPath, setInspectedPath] = useState<string | null>(null);
@@ -29,14 +32,37 @@ function ArchitectureContent() {
     getRepository(repoId)
       .then(setRepo)
       .catch((err) => console.error("Failed to load repo info:", err));
+
+    setLoadingNeural(true);
+    getObsidianGraph(repoId)
+      .then((data) => {
+        setNeuralData(data);
+      })
+      .catch((err) => console.error("Failed to load neural graph:", err))
+      .finally(() => setLoadingNeural(false));
   }, [repoId]);
 
   return (
     <div className="relative w-full h-[calc(100vh-3.5rem)] bg-[#090d16] flex flex-col overflow-hidden">
-      {/* Top 3-Mode Switcher Bar */}
+      {/* Top 4-Mode Switcher Bar */}
       <div className="h-14 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-1 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono">
+            <button
+              onClick={() => {
+                setViewMode("neural");
+                setInspectedPath(null);
+              }}
+              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg font-semibold transition-all ${
+                viewMode === "neural"
+                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-600/30 ring-1 ring-white/20"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Brain className="w-3.5 h-3.5 text-violet-300" />
+              <span>Neural AST Map</span>
+            </button>
+
             <button
               onClick={() => {
                 setViewMode("structure");
@@ -113,6 +139,28 @@ function ArchitectureContent() {
 
       {/* Main Exploration View Area */}
       <div className="flex-1 relative w-full h-full overflow-hidden">
+        {viewMode === "neural" && (
+          loadingNeural ? (
+            <div className="w-full h-full flex flex-col items-center justify-center space-y-3 bg-[#080c15] text-slate-400 font-mono text-xs">
+              <div className="w-8 h-8 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
+              <span>Synthesizing repository neural AST network...</span>
+            </div>
+          ) : neuralData ? (
+            <ObsidianConstellationGraph
+              data={neuralData}
+              onSelectNode={(node) => {
+                if (node.path) {
+                  setInspectedPath(node.path);
+                }
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs font-mono">
+              No neural graph available for this repository.
+            </div>
+          )
+        )}
+
         {viewMode === "structure" && (
           <ProjectStructureView
             repoId={repoId}

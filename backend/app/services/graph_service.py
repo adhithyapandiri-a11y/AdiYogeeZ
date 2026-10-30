@@ -746,12 +746,398 @@ class GraphService:
         }
 
     # =========================================================================
+    # VIEW 4: EXECUTION PATH (Callers & Callees Tracing)
+    # =========================================================================
+    async def get_execution_path(self, session: AsyncSession, repo_id: int, symbol_name: str) -> Dict[str, Any]:
+        """
+        Traces upstream callers and downstream callees for a specified function/method.
+        Returns: target_symbol, callers, callees, flow_chain, static_analysis_notice.
+        """
+        sym_stmt = select(CodeSymbol).where(
+            CodeSymbol.repository_id == repo_id,
+            func.lower(CodeSymbol.name) == symbol_name.lower()
+        )
+        res = await session.execute(sym_stmt)
+        target = res.scalars().first()
+        if not target:
+            return {"error": f"Symbol '{symbol_name}' not found in indexed codebase."}
+
+        # Fetch file for target
+        file_res = await session.execute(select(RepoFile).where(RepoFile.id == target.file_id))
+        target_file = file_res.scalar_one_or_none()
+
+        # Find incoming callers (dependencies where target_symbol == target.name)
+        callers_stmt = select(Dependency).where(
+            Dependency.repository_id == repo_id,
+            func.lower(Dependency.target_symbol) == symbol_name.lower(),
+            Dependency.relationship_type.in_(["calls", "imports"])
+        )
+        callers_res = await session.execute(callers_stmt)
+        callers_deps = callers_res.scalars().all()
+
+        # Find downstream callees (dependencies where source_file == target.file_path and relationship_type == 'calls')
+        callees_stmt = select(Dependency).where(
+            Dependency.repository_id == repo_id,
+            Dependency.source_file_path == target.file_path,
+            Dependency.relationship_type == "calls"
+        )
+        callees_res = await session.execute(callees_stmt)
+        callees_deps = callees_res.scalars().all()
+
+        callers_list = []
+        for cd in callers_deps[:10]:
+            callers_list.append({
+                "name": cd.source_symbol or cd.source_file_path.split("/")[-1],
+                "symbol_type": "caller",
+                "file_path": cd.source_file_path,
+                "lines": str(cd.evidence_line or 1),
+                "source_code": cd.evidence_snippet or f"{symbol_name}() call"
+            })
+
+        callees_list = []
+        for c in callees_deps[:10]:
+            callees_list.append({
+                "name": c.target_symbol,
+                "symbol_type": "function",
+                "file_path": c.target_file_path or target.file_path,
+                "lines": str(c.evidence_line or 1),
+                "source_code": c.evidence_snippet or f"invocation of {c.target_symbol}()"
+            })
+
+        # Construct Flow Chain: CALLERS -> TARGET -> CALLEES
+        flow_chain = []
+        for c in callers_list[:2]:
+            flow_chain.append({
+                "stage": "CALLER",
+                "name": c["name"],
+                "symbol_name": c["name"],
+                "title": f"Upstream: {c['name']}",
+                "symbol_type": "caller",
+                "file_path": c["file_path"],
+                "lines": c["lines"],
+                "snippet": c["source_code"],
+                "source_code": c["source_code"],
+                "role": "Caller"
+            })
+
+        flow_chain.append({
+            "stage": "TARGET",
+            "name": target.name,
+            "symbol_name": target.name,
+            "title": f"Target: {target.name}()",
+            "symbol_type": target.symbol_type,
+            "file_path": target.file_path,
+            "lines": f"{target.start_line}-{target.end_line}",
+            "snippet": target.source_code[:500] if target.source_code else f"def {target.name}(...)",
+            "source_code": target.source_code or "",
+            "role": target_file.architectural_role if target_file else "Function"
+        })
+
+        for c in callees_list[:3]:
+            flow_chain.append({
+                "stage": "CALLEE",
+                "name": c["name"],
+                "symbol_name": c["name"],
+                "title": f"Downstream: {c['name']}()",
+                "symbol_type": c["symbol_type"],
+                "file_path": c["file_path"],
+                "lines": c["lines"],
+                "snippet": c["source_code"],
+                "source_code": c["source_code"],
+                "role": "Callee"
+            })
+
+        return {
+            "target_symbol": {
+                "name": target.name,
+                "symbol_type": target.symbol_type,
+                "file_path": target.file_path,
+                "start_line": target.start_line,
+                "end_line": target.end_line,
+                "source_code": target.source_code or ""
+            },
+            "callers": callers_list,
+            "callees": callees_list,
+            "flow_chain": flow_chain,
+            "static_analysis_notice": "Static invocation mapping reconstructed from AST symbol call expressions."
+        }
+
+    # =========================================================================
+    # VIEW 5: NEURAL NETWORK COSMOS GRAPH (Branch Palettes & Depth Gradients)
+    # =========================================================================
+    @staticmethod
+    def _hsl_to_hex(h: float, s: float, l: float) -> str:
+        s_norm = max(0.0, min(100.0, s)) / 100.0
+        l_norm = max(0.0, min(100.0, l)) / 100.0
+        h_norm = h % 360.0
+
+        c = (1.0 - abs(2.0 * l_norm - 1.0)) * s_norm
+        x = c * (1.0 - abs(((h_norm / 60.0) % 2.0) - 1.0))
+        m = l_norm - c / 2.0
+
+        if 0 <= h_norm < 60:
+            r_prime, g_prime, b_prime = c, x, 0
+        elif 60 <= h_norm < 120:
+            r_prime, g_prime, b_prime = x, c, 0
+        elif 120 <= h_norm < 180:
+            r_prime, g_prime, b_prime = 0, c, x
+        elif 180 <= h_norm < 240:
+            r_prime, g_prime, b_prime = 0, x, c
+        elif 240 <= h_norm < 300:
+            r_prime, g_prime, b_prime = x, 0, c
+        else:
+            r_prime, g_prime, b_prime = c, 0, x
+
+        r = int(round((r_prime + m) * 255))
+        g = int(round((g_prime + m) * 255))
+        b = int(round((b_prime + m) * 255))
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    async def get_obsidian_graph(self, session: AsyncSession, repo_id: int) -> Dict[str, Any]:
+        """
+        Builds the Neural Network Knowledge Graph of the repository:
+        - Each top-level root folder receives a distinct vibrant neon hue.
+        - Child sub-folders inherit the hue and become lighter.
+        - Sub-files and leaf nodes become even lighter glowing tints.
+        - Synapses map both structural containment and cross-module import calls.
+        """
+        files_stmt = select(RepoFile).where(RepoFile.repository_id == repo_id)
+        files_res = await session.execute(files_stmt)
+        files = files_res.scalars().all()
+
+        symbols_stmt = select(CodeSymbol).where(CodeSymbol.repository_id == repo_id)
+        sym_res = await session.execute(symbols_stmt)
+        symbols = sym_res.scalars().all()
+
+        deps_stmt = select(Dependency).where(Dependency.repository_id == repo_id)
+        deps_res = await session.execute(deps_stmt)
+        deps = deps_res.scalars().all()
+
+        in_degree = defaultdict(int)
+        out_degree = defaultdict(int)
+        for d in deps:
+            out_degree[d.source_file_path] += 1
+            in_degree[d.target_file_path] += 1
+
+        sym_by_file = defaultdict(list)
+        for s in symbols:
+            sym_by_file[s.file_path].append(s)
+
+        # 10 Distinct Vibrant Neon Branch Palettes
+        BRANCH_PALETTES = [
+            {"name": "Cyber Violet", "h": 265, "s": 92, "base_l": 52},
+            {"name": "Neon Cyan", "h": 190, "s": 96, "base_l": 48},
+            {"name": "Radiant Emerald", "h": 155, "s": 86, "base_l": 44},
+            {"name": "Electric Amber", "h": 38, "s": 96, "base_l": 50},
+            {"name": "Cyber Rose", "h": 345, "s": 92, "base_l": 55},
+            {"name": "Neon Blue", "h": 218, "s": 94, "base_l": 55},
+            {"name": "Solar Orange", "h": 22, "s": 95, "base_l": 52},
+            {"name": "Neon Fuchsia", "h": 295, "s": 88, "base_l": 54},
+            {"name": "Acid Lime", "h": 95, "s": 88, "base_l": 46},
+            {"name": "Seafoam Teal", "h": 172, "s": 90, "base_l": 45},
+        ]
+        ROOT_FILE_PALETTE = {"name": "Titanium Slate", "h": 215, "s": 25, "base_l": 62}
+
+        # Identify top-level root folders
+        top_folder_counts = defaultdict(int)
+        for f in files:
+            parts = f.file_path.split("/")
+            if len(parts) > 1:
+                top_folder_counts[parts[0]] += 1
+            else:
+                top_folder_counts["__root__"] += 1
+
+        sorted_top_folders = sorted(
+            [k for k in top_folder_counts.keys() if k != "__root__"],
+            key=lambda k: top_folder_counts[k],
+            reverse=True
+        )
+
+        folder_palettes = {}
+        for idx, folder in enumerate(sorted_top_folders):
+            folder_palettes[folder] = BRANCH_PALETTES[idx % len(BRANCH_PALETTES)]
+        folder_palettes["__root__"] = ROOT_FILE_PALETTE
+
+        # Aggregate directories
+        dirs: Dict[str, Dict[str, Any]] = {}
+        for f in files:
+            parts = f.file_path.split("/")
+            if len(parts) > 1:
+                cur_path = ""
+                for i in range(len(parts) - 1):
+                    folder_name = parts[i]
+                    cur_path = f"{cur_path}/{folder_name}" if cur_path else folder_name
+                    if cur_path not in dirs:
+                        dirs[cur_path] = {
+                            "name": folder_name,
+                            "path": cur_path,
+                            "depth": cur_path.count("/"),
+                            "parent": os.path.dirname(cur_path) if "/" in cur_path else "",
+                            "files": [],
+                            "subdirs": set(),
+                            "root_folder": parts[0]
+                        }
+                    dirs[cur_path]["files"].append(f.file_path)
+                    if i > 0:
+                        parent_path = os.path.dirname(cur_path)
+                        if parent_path in dirs:
+                            dirs[parent_path]["subdirs"].add(cur_path)
+
+        nodes: List[Dict[str, Any]] = []
+        links: List[Dict[str, Any]] = []
+
+        # Root Core Node
+        root_core_id = "dir:root"
+        nodes.append({
+            "id": root_core_id,
+            "name": "Neural Core",
+            "type": "directory",
+            "path": "",
+            "size": 30,
+            "color": "#6366f1",
+            "baseColor": "#6366f1",
+            "rootFolder": "Core",
+            "depth": 0,
+            "fileCount": len(files),
+            "directoryCount": len(dirs)
+        })
+
+        # Add Directory Nodes with Depth-Lightened Tints
+        for dpath, dinfo in sorted(dirs.items(), key=lambda x: x[1]["depth"]):
+            dir_node_id = f"dir:{dpath}"
+            root_f = dinfo["root_folder"]
+            pal = folder_palettes.get(root_f, ROOT_FILE_PALETTE)
+            d_depth = dinfo["depth"]
+
+            # Main Folder (depth 0) is darkest/most saturated; deeper subfolders become lighter
+            dir_lightness = pal["base_l"] + min(d_depth * 10, 24)
+            dir_color = self._hsl_to_hex(pal["h"], pal["s"], dir_lightness)
+            base_color = self._hsl_to_hex(pal["h"], pal["s"], pal["base_l"])
+
+            nodes.append({
+                "id": dir_node_id,
+                "name": dinfo["name"],
+                "type": "directory",
+                "path": dpath,
+                "size": 24 if d_depth == 0 else 16,
+                "color": dir_color,
+                "baseColor": base_color,
+                "rootFolder": root_f,
+                "depth": d_depth,
+                "fileCount": len(dinfo["files"]),
+                "folderCount": len(dinfo["subdirs"]),
+            })
+
+            parent_id = f"dir:{dinfo['parent']}" if dinfo["parent"] else root_core_id
+            links.append({
+                "source": parent_id,
+                "target": dir_node_id,
+                "type": "contains",
+                "value": 1,
+                "branchColor": base_color,
+                "color": dir_color
+            })
+
+        # Add File Nodes with progressive sub-file lightening
+        for f in files:
+            file_node_id = f"file:{f.file_path}"
+            f_syms = sym_by_file[f.file_path]
+            parts = f.file_path.split("/")
+            
+            if len(parts) > 1:
+                root_f = parts[0]
+                f_depth = len(parts) - 1
+                f_dir = os.path.dirname(f.file_path)
+                parent_id = f"dir:{f_dir}" if f_dir in dirs else root_core_id
+            else:
+                root_f = "__root__"
+                f_depth = 1
+                parent_id = root_core_id
+
+            pal = folder_palettes.get(root_f, ROOT_FILE_PALETTE)
+
+            # Files are lighter than their parent folders: depth-based progressive tinting
+            file_lightness = min(88, pal["base_l"] + 16 + min(f_depth * 8, 30))
+            file_sat = max(45, pal["s"] - f_depth * 6)
+            file_color = self._hsl_to_hex(pal["h"], file_sat, file_lightness)
+            base_color = self._hsl_to_hex(pal["h"], pal["s"], pal["base_l"])
+
+            node_size = max(8, min(18, 8 + (f.line_count // 150) + in_degree[f.file_path]))
+
+            nodes.append({
+                "id": file_node_id,
+                "name": os.path.basename(f.file_path),
+                "type": "file",
+                "path": f.file_path,
+                "size": node_size,
+                "color": file_color,
+                "baseColor": base_color,
+                "rootFolder": root_f if root_f != "__root__" else "Root Files",
+                "depth": f_depth,
+                "language": f.language,
+                "lineCount": f.line_count,
+                "fileSize": f.file_size,
+                "functionCount": len([s for s in f_syms if s.symbol_type in ("function", "method")]),
+                "classCount": len([s for s in f_syms if s.symbol_type == "class"]),
+                "inDegree": in_degree[f.file_path],
+                "outDegree": out_degree[f.file_path],
+                "architecturalRole": f.architectural_role or "Unknown"
+            })
+
+            links.append({
+                "source": parent_id,
+                "target": file_node_id,
+                "type": "contains",
+                "value": 1,
+                "branchColor": base_color,
+                "color": file_color
+            })
+
+        # Add Cross-File Dependency Links (Synapses)
+        file_paths_set = {f.file_path for f in files}
+        for d in deps:
+            if d.source_file_path in file_paths_set and d.target_file_path in file_paths_set:
+                links.append({
+                    "source": f"file:{d.source_file_path}",
+                    "target": f"file:{d.target_file_path}",
+                    "type": d.relationship_type or "imports",
+                    "value": 2,
+                    "color": RELATIONSHIP_COLORS.get(d.relationship_type, "#818cf8"),
+                    "branchColor": "#818cf8"
+                })
+
+        # Summary of root folder clusters for frontend filter bar
+        root_folders_summary = []
+        for folder in sorted_top_folders:
+            pal = folder_palettes[folder]
+            root_folders_summary.append({
+                "name": folder,
+                "color": self._hsl_to_hex(pal["h"], pal["s"], pal["base_l"]),
+                "file_count": top_folder_counts[folder]
+            })
+
+        if top_folder_counts["__root__"] > 0:
+            root_folders_summary.append({
+                "name": "Root Files",
+                "color": self._hsl_to_hex(ROOT_FILE_PALETTE["h"], ROOT_FILE_PALETTE["s"], ROOT_FILE_PALETTE["base_l"]),
+                "file_count": top_folder_counts["__root__"]
+            })
+
+        return {
+            "nodes": nodes,
+            "links": links,
+            "root_folders": root_folders_summary,
+            "stats": {
+                "total_nodes": len(nodes),
+                "total_links": len(links),
+                "total_directories": len(dirs),
+                "total_files": len(files)
+            }
+        }
+
+    # =========================================================================
     # BACKWARD COMPATIBLE LEGACY METHODS
     # =========================================================================
-    async def get_obsidian_graph(self, session: AsyncSession, repo_id: int) -> Dict[str, Any]:
-        """Backward compatibility for existing callers."""
-        return await self.get_project_structure(session, repo_id)
-
     async def get_architecture_flow(self, session: AsyncSession, repo_id: int) -> Dict[str, Any]:
         """Backward compatibility for existing callers."""
         return await self.get_dependency_map(session, repo_id, level="files")

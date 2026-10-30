@@ -233,6 +233,12 @@ export interface NodeDetails {
   outgoing_dependencies: Array<{ file_path: string; relationship_type?: string; evidence_line?: number }> | string[];
 }
 
+export interface RootFolderSummary {
+  name: string;
+  color: string;
+  file_count: number;
+}
+
 export interface ObsidianNode {
   id: string;
   name: string;
@@ -240,6 +246,9 @@ export interface ObsidianNode {
   path: string;
   size: number;
   color: string;
+  baseColor?: string;
+  branchColor?: string;
+  rootFolder?: string;
   depth?: number;
   language?: string;
   lineCount?: number;
@@ -250,6 +259,11 @@ export interface ObsidianNode {
   symbolType?: string;
   startLine?: number;
   endLine?: number;
+  architecturalRole?: string;
+  // Commit state dynamic overlay
+  commitStatus?: "modified" | "added" | "removed" | "none";
+  commitAdditions?: number;
+  commitDeletions?: number;
 }
 
 export interface ObsidianLink {
@@ -257,11 +271,14 @@ export interface ObsidianLink {
   target: string | any;
   type: string;
   value: number;
+  color?: string;
+  branchColor?: string;
 }
 
 export interface ObsidianGraphData {
   nodes: ObsidianNode[];
   links: ObsidianLink[];
+  root_folders?: RootFolderSummary[];
   stats: {
     total_nodes: number;
     total_links: number;
