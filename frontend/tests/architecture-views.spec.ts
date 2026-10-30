@@ -259,13 +259,11 @@ test.describe("Architecture 4-View Suite & GitDiagram Hierarchy", () => {
     await expect(page.getByRole("button", { name: "Neural Map", exact: true })).toBeVisible();
 
     // Check top navigation tabs
-    await expect(page.getByRole("button", { name: "Obsidian Cosmos" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Obsidian Cosmos/ })).toBeVisible();
     await expect(page.getByRole("button", { name: "Hierarchy" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Dependency Map" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Feature Flow" })).toBeVisible();
 
-    // Verify Repository Map is REMOVED
-    await expect(page.getByRole("button", { name: "Repository Map" })).toHaveCount(0);
+
+    await expect(page.getByRole("button", { name: "Repository Map" })).toBeVisible();
   });
 
   test("hierarchy view presents GitDiagram format with Diagram, Canvas, and Mermaid Code", async ({ page }) => {
@@ -294,34 +292,11 @@ test.describe("Architecture 4-View Suite & GitDiagram Hierarchy", () => {
     await expect(page.locator(".react-flow")).toBeVisible();
   });
 
-  test("dependency map defaults to modules and has isolated file toggle", async ({ page }) => {
+  test("keeps the restored Repository Map and removed tabs match main", async ({ page }) => {
     await mockApis(page);
     await page.goto("/workspace/1/architecture");
-
-    // Switch to Dependency Map
-    await page.getByRole("button", { name: "Dependency Map" }).click();
-
-    // Verify Level 1: Modules is visible
-    await expect(page.getByRole("button", { name: "Level 1: Modules" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Level 2: Files" })).toBeVisible();
-
-    // Switch to Level 2: Files and verify Isolated Hidden is default
-    await page.getByRole("button", { name: "Level 2: Files" }).click({ force: true });
-    await expect(page.getByRole("button", { name: /Isolated Hidden|Show All/ })).toBeVisible();
-  });
-
-  test("feature flow displays presets and execution pipeline", async ({ page }) => {
-    await mockApis(page);
-    await page.goto("/workspace/1/architecture");
-
-    // Switch to Feature Flow
-    await page.getByRole("button", { name: "Feature Flow" }).click();
-
-    // Verify workflow presets
-    await expect(page.getByRole("button", { name: "Request Routing & Handling" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Error Handling & Fallback" })).toBeVisible();
-
-    // Verify stage node (either in canvas node or active stage inspector)
-    await expect(page.getByRole("heading", { name: "Application Entry & Initialization" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Repository Map", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Dependency Map", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Feature Flow", exact: true })).toHaveCount(0);
   });
 });

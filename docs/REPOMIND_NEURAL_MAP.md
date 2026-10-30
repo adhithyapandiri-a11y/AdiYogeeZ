@@ -7,7 +7,7 @@ The homepage and new default Neural Map use the approved neutral charcoal / warm
 - The homepage submits to the existing `POST /api/repos/connect`, polls `GET /api/repos/:id`, displays the indexer's status and progress, and opens `/workspace/:id/architecture` on completion.
 - The Neural Map consumes the existing `/api/architecture/obsidian/:id` response. It derives directory containment from actual paths and only includes dependency relationships returned by that endpoint. Symbol satellites are omitted to keep the file/folder map readable.
 - File selection opens the existing file inspector and code viewer. The AI link opens the existing chat route; no AI provider or backend implementation changes are included.
-- Obsidian Cosmos, Hierarchy, Dependency Map, Feature Flow, and the other workspace tools remain available.
+- The latest main branch’s 3D Obsidian Cosmos, restored Repository Map, Hierarchy, and the other workspace tools remain available. Dependency Map and Feature Flow remain removed from navigation, matching main.
 
 ## Interaction
 

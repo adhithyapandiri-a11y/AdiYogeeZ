@@ -79,7 +79,7 @@ test("homepage validates URLs and opens the indexed neural workspace", async ({
     page.getByRole("button", { name: "Neural Map", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(
-    page.getByRole("button", { name: "Obsidian Cosmos", exact: true }),
+    page.getByRole("button", { name: /Obsidian Cosmos/ }),
   ).toBeVisible();
 });
 test("file search, folder collapse, filters, canvas and mobile layout", async ({
