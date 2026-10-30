@@ -391,3 +391,63 @@ export interface ImpactAnalysisResponse {
   };
   disclaimer: string;
 }
+
+// ============================================================================
+// API CHAOS LAB & AUTONOMOUS RED-TEAM TYPES
+// ============================================================================
+
+export interface ChaosRules {
+  active: boolean;
+  latency_ms: number;
+  error_status: number | null;
+  error_rate: number;
+  drop_request: boolean;
+  malformed_response: boolean;
+}
+
+export interface ChaosLogItem {
+  id: string;
+  method: string;
+  endpoint: string;
+  timestamp: string;
+  duration_ms: number;
+  status_code: number;
+  chaos_injected: string[];
+  payload_preview: string;
+  success: boolean;
+}
+
+export interface RedTeamLoophole {
+  id: string;
+  title: string;
+  severity: "CRITICAL" | "HIGH" | "MEDIUM";
+  category: "TIMEOUT_HANG" | "TRANSIENT_FAULT" | "BOUNDARY_FUZZ" | "MALFORMED_DATA";
+  endpoint: string;
+  description: string;
+  reproduction_curl: string;
+  observed_failure: string;
+  proposed_diff: string;
+  fix_explanation: string;
+  status: "open" | "shield_active" | "verified_repaired";
+  is_shielded?: boolean;
+}
+
+export interface RedTeamAuditResponse {
+  timestamp: string;
+  total_probes_run: number;
+  loopholes_detected: number;
+  resilience_score: number;
+  loopholes: RedTeamLoophole[];
+}
+
+export interface CheckoutResult {
+  status: string;
+  order_id: string;
+  items_count: number;
+  total_charged: number;
+  currency: string;
+  card_last4: string;
+  processed_at: string;
+  chaos_applied: string[];
+  latency_ms: number;
+}

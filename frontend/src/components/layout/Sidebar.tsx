@@ -14,7 +14,8 @@ import {
   Settings,
   Code2,
   FileCode2,
-  Cpu
+  Cpu,
+  Zap
 } from "lucide-react";
 import { Repository } from "@/lib/types";
 
@@ -68,6 +69,12 @@ export default function Sidebar({ repoId, repo }: SidebarProps) {
       href: `/workspace/${repoId}/impact`,
       icon: ShieldAlert,
       badge: null
+    },
+    {
+      label: "API Chaos Lab",
+      href: `/workspace/${repoId}/chaos-lab`,
+      icon: Zap,
+      badge: "Red-Team"
     },
     {
       label: "Settings",

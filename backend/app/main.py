@@ -10,6 +10,7 @@ from backend.app.api.routes_execution_path import router as exec_router
 from backend.app.api.routes_time_machine import router as time_router
 from backend.app.api.routes_contribution import router as contrib_router
 from backend.app.api.routes_impact import router as impact_router
+from backend.app.api.routes_chaos import router as chaos_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,6 +42,7 @@ app.include_router(exec_router, prefix=settings.API_V1_PREFIX)
 app.include_router(time_router, prefix=settings.API_V1_PREFIX)
 app.include_router(contrib_router, prefix=settings.API_V1_PREFIX)
 app.include_router(impact_router, prefix=settings.API_V1_PREFIX)
+app.include_router(chaos_router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/health")
 async def health_check():

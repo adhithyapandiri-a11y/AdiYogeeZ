@@ -226,3 +226,91 @@ export async function analyzeImpact(repoId: number, proposedChange: string): Pro
   if (!res.ok) throw new Error("Failed to analyze impact");
   return res.json();
 }
+
+// ============================================================================
+// API CHAOS LAB & RED-TEAM API CLIENT
+// ============================================================================
+
+import {
+  ChaosRules,
+  ChaosLogItem,
+  RedTeamAuditResponse,
+  CheckoutResult
+} from "./types";
+
+export async function getChaosRules(): Promise<ChaosRules> {
+  const res = await fetch(`${API_BASE}/chaos/rules`);
+  if (!res.ok) throw new Error("Failed to fetch chaos rules");
+  return res.json();
+}
+
+export async function updateChaosRules(rules: ChaosRules): Promise<ChaosRules> {
+  const res = await fetch(`${API_BASE}/chaos/rules`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(rules)
+  });
+  if (!res.ok) throw new Error("Failed to update chaos rules");
+  return res.json();
+}
+
+export async function resetChaosRules(): Promise<ChaosRules> {
+  const res = await fetch(`${API_BASE}/chaos/reset`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to reset chaos rules");
+  return res.json();
+}
+
+export async function getChaosLogs(): Promise<ChaosLogItem[]> {
+  const res = await fetch(`${API_BASE}/chaos/logs`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function clearChaosLogs(): Promise<void> {
+  await fetch(`${API_BASE}/chaos/logs`, { method: "DELETE" });
+}
+
+export async function executeSampleCheckout(payload: {
+  quantity: number;
+  total_price: number;
+  client_timeout_ms?: number;
+  retry_attempt?: number;
+  shield_enabled?: boolean;
+}): Promise<CheckoutResult> {
+  const res = await fetch(`${API_BASE}/chaos/sample/checkout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({ detail: `HTTP ${res.status} Error` }));
+    throw new Error(errData.detail || `Server returned ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function runRedTeamAudit(): Promise<RedTeamAuditResponse> {
+  const res = await fetch(`${API_BASE}/chaos/redteam/run-audit`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to run Red-Team audit");
+  return res.json();
+}
+
+export async function applyRedTeamShield(loopholeId: string): Promise<{ success: boolean; message: string; patch_applied: string }> {
+  const res = await fetch(`${API_BASE}/chaos/redteam/apply-shield`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ loophole_id: loopholeId })
+  });
+  if (!res.ok) throw new Error("Failed to deploy shield patch");
+  return res.json();
+}
+
+export async function verifyRedTeamShield(loopholeId: string): Promise<{ verified: boolean; message: string; re_attack_result: string; metrics?: any }> {
+  const res = await fetch(`${API_BASE}/chaos/redteam/verify-shield`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ loophole_id: loopholeId })
+  });
+  if (!res.ok) throw new Error("Failed to verify shield");
+  return res.json();
+}

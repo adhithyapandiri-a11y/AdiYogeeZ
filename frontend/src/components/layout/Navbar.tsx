@@ -12,7 +12,8 @@ import {
   CheckCircle2, 
   ChevronDown,
   Terminal,
-  Activity
+  Activity,
+  Zap
 } from "lucide-react";
 import { Repository } from "@/lib/types";
 import { getRepositories } from "@/lib/api";
@@ -122,6 +123,15 @@ export default function Navbar({ currentRepo, onSelectRepo, onOpenConnectModal }
 
       {/* Right side stats & actions */}
       <div className="flex items-center space-x-3">
+        {/* Chaos Lab Quick Link */}
+        <Link
+          href={currentRepo ? `/workspace/${currentRepo.id}/chaos-lab` : "/chaos-lab"}
+          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-mono font-semibold transition-all shadow-sm"
+        >
+          <Zap className="w-3.5 h-3.5 text-amber-400" />
+          <span>API Chaos Lab</span>
+        </Link>
+
         {/* Status Indicators */}
         <div className="hidden md:flex items-center space-x-3 px-3 py-1 rounded-full bg-slate-900/60 border border-white/5 text-xs text-slate-400">
           <div className="flex items-center space-x-1.5">
