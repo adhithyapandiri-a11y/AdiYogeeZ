@@ -241,6 +241,7 @@ export interface ObsidianNode {
   size: number;
   color: string;
   depth?: number;
+  fileCount?: number;
   language?: string;
   lineCount?: number;
   functionCount?: number;

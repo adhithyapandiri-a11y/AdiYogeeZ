@@ -746,11 +746,287 @@ class GraphService:
         }
 
     # =========================================================================
-    # BACKWARD COMPATIBLE LEGACY METHODS
+    # OBSIDIAN COSMOS GRAPH (Interactive Force-Directed Constellation Network)
     # =========================================================================
     async def get_obsidian_graph(self, session: AsyncSession, repo_id: int) -> Dict[str, Any]:
-        """Backward compatibility for existing callers."""
-        return await self.get_project_structure(session, repo_id)
+        """
+        Builds the Obsidian-style constellation graph.
+        - Directory hubs (large glowing dots)
+        - Source files (medium nodes sized by connectivity)
+        - Symbol satellites (small dots for functions/classes)
+        - Links: containment, imports, and calls
+        """
+        files_stmt = select(RepoFile).where(RepoFile.repository_id == repo_id)
+        files_res = await session.execute(files_stmt)
+        files = files_res.scalars().all()
+
+        symbols_stmt = select(CodeSymbol).where(CodeSymbol.repository_id == repo_id)
+        sym_res = await session.execute(symbols_stmt)
+        symbols = sym_res.scalars().all()
+
+        deps_stmt = select(Dependency).where(Dependency.repository_id == repo_id)
+        deps_res = await session.execute(deps_stmt)
+        deps = deps_res.scalars().all()
+
+        nodes: List[Dict[str, Any]] = []
+        links: List[Dict[str, Any]] = []
+
+        in_degree = defaultdict(int)
+        out_degree = defaultdict(int)
+        for d in deps:
+            out_degree[d.source_file_path] += 1
+            in_degree[d.target_file_path] += 1
+
+        dirs_created: Set[str] = set()
+        sym_by_file: Dict[str, List[CodeSymbol]] = defaultdict(list)
+        for s in symbols:
+            sym_by_file[s.file_path].append(s)
+
+        # 1. Directory Hub Nodes (Obsidian major folder dots)
+        dir_file_counts = defaultdict(int)
+        for f in files:
+            parts = f.file_path.split("/")
+            if len(parts) > 1:
+                cur_dir = ""
+                for i in range(len(parts) - 1):
+                    folder_name = parts[i]
+                    cur_dir = f"{cur_dir}/{folder_name}" if cur_dir else folder_name
+                    dir_file_counts[cur_dir] += 1
+
+        for f in files:
+            parts = f.file_path.split("/")
+            if len(parts) > 1:
+                cur_dir = ""
+                parent_dir = None
+                for i in range(len(parts) - 1):
+                    folder_name = parts[i]
+                    cur_dir = f"{cur_dir}/{folder_name}" if cur_dir else folder_name
+                    dir_id = f"dir:{cur_dir}"
+
+                    if dir_id not in dirs_created:
+                        dirs_created.add(dir_id)
+                        depth = cur_dir.count("/")
+                        nodes.append({
+                            "id": dir_id,
+                            "name": folder_name,
+                            "type": "directory",
+                            "path": cur_dir,
+                            "size": max(16, 28 - depth * 3),
+                            "color": "#6366f1" if depth == 0 else "#818cf8",
+                            "depth": depth,
+                            "fileCount": dir_file_counts[cur_dir]
+                        })
+                        if parent_dir:
+                            links.append({
+                                "source": parent_dir,
+                                "target": dir_id,
+                                "type": "contains",
+                                "value": 2
+                            })
+                    parent_dir = dir_id
+
+        # 2. File Nodes (Obsidian medium dots)
+        for f in files:
+            deg = in_degree[f.file_path] + out_degree[f.file_path]
+            file_id = f"file:{f.file_path}"
+            f_symbols = sym_by_file[f.file_path]
+
+            nodes.append({
+                "id": file_id,
+                "name": os.path.basename(f.file_path),
+                "type": "file",
+                "path": f.file_path,
+                "language": f.language,
+                "size": min(26, max(8, 8 + int(deg * 1.6))),
+                "color": self._get_color_for_lang(f.language),
+                "lineCount": f.line_count,
+                "functionCount": len([s for s in f_symbols if s.symbol_type in ("function", "method")]),
+                "classCount": len([s for s in f_symbols if s.symbol_type == "class"]),
+                "inDegree": in_degree[f.file_path],
+                "outDegree": out_degree[f.file_path]
+            })
+
+            # Link file to parent directory hub
+            parent_dir = os.path.dirname(f.file_path)
+            if parent_dir and f"dir:{parent_dir}" in dirs_created:
+                links.append({
+                    "source": f"dir:{parent_dir}",
+                    "target": file_id,
+                    "type": "contains",
+                    "value": 1
+                })
+
+            # 3. Satellite Dots for key functions (up to 4 symbols per connected file)
+            if deg > 0 or len(files) < 60:
+                for s in f_symbols[:4]:
+                    sym_id = f"sym:{f.file_path}:{s.name}"
+                    nodes.append({
+                        "id": sym_id,
+                        "name": f"{s.name}()",
+                        "type": "symbol",
+                        "path": f.file_path,
+                        "symbolType": s.symbol_type,
+                        "startLine": s.start_line,
+                        "endLine": s.end_line,
+                        "size": 5,
+                        "color": "#38bdf8" if s.symbol_type in ("function", "method") else "#a855f7"
+                    })
+                    links.append({
+                        "source": file_id,
+                        "target": sym_id,
+                        "type": "has_symbol",
+                        "value": 1
+                    })
+
+        # 4. Import / Call Dependency Edges
+        for d in deps:
+            s_id = f"file:{d.source_file_path}"
+            t_id = f"file:{d.target_file_path}"
+            links.append({
+                "source": s_id,
+                "target": t_id,
+                "type": d.relationship_type or "imports",
+                "value": 2
+            })
+
+        return {
+            "nodes": nodes,
+            "links": links,
+            "stats": {
+                "total_nodes": len(nodes),
+                "total_links": len(links),
+                "total_directories": len(dirs_created),
+                "total_files": len(files)
+            }
+        }
+
+    # =========================================================================
+    # EXECUTION PATH EXPLORER (Caller -> Target -> Callee Chaining)
+    # =========================================================================
+    async def get_execution_path(
+        self,
+        session: AsyncSession,
+        repo_id: int,
+        symbol_name: str
+    ) -> Dict[str, Any]:
+        """
+        Traces upstream callers and downstream callees for a specified function/method.
+        Returns: target_symbol, callers, callees, flow_chain, static_analysis_notice.
+        """
+        sym_stmt = select(CodeSymbol).where(
+            CodeSymbol.repository_id == repo_id,
+            func.lower(CodeSymbol.name) == symbol_name.lower()
+        )
+        res = await session.execute(sym_stmt)
+        target = res.scalars().first()
+
+        # Fuzzy match if exact query not found
+        if not target:
+            all_sym_stmt = select(CodeSymbol).where(CodeSymbol.repository_id == repo_id)
+            all_res = await session.execute(all_sym_stmt)
+            for s in all_res.scalars().all():
+                if symbol_name.lower() in s.name.lower():
+                    target = s
+                    break
+
+        if not target:
+            return {"error": f"Symbol '{symbol_name}' not found in indexed codebase."}
+
+        # Fetch file for target
+        file_res = await session.execute(select(RepoFile).where(RepoFile.id == target.file_id))
+        target_file = file_res.scalars().first()
+
+        # Find incoming callers
+        callers_stmt = select(Dependency).where(
+            Dependency.repository_id == repo_id,
+            func.lower(Dependency.target_symbol) == target.name.lower()
+        )
+        callers_res = await session.execute(callers_stmt)
+        callers_deps = callers_res.scalars().all()
+
+        # Also search in files that import this file or invoke this function
+        if not callers_deps:
+            caller_file_stmt = select(Dependency).where(
+                Dependency.repository_id == repo_id,
+                Dependency.target_file_path == target.file_path
+            )
+            cf_res = await session.execute(caller_file_stmt)
+            callers_deps = cf_res.scalars().all()
+
+        callers_list = []
+        for cd in callers_deps[:10]:
+            callers_list.append({
+                "name": cd.source_symbol or os.path.basename(cd.source_file_path),
+                "symbol_type": "caller",
+                "file_path": cd.source_file_path,
+                "lines": str(cd.evidence_line or 1),
+                "source_code": cd.evidence_snippet or f"{target.name}() invocation reference"
+            })
+
+        # Find downstream callees
+        callees_stmt = select(Dependency).where(
+            Dependency.repository_id == repo_id,
+            Dependency.source_file_path == target.file_path,
+            Dependency.relationship_type.in_(["calls", "imports"])
+        )
+        callees_res = await session.execute(callees_stmt)
+        callees_deps = callees_res.scalars().all()
+
+        callees_list = []
+        for c in callees_deps[:10]:
+            callees_list.append({
+                "name": c.target_symbol or os.path.basename(c.target_file_path),
+                "symbol_type": "function",
+                "file_path": c.target_file_path or target.file_path,
+                "lines": str(c.evidence_line or 1),
+                "source_code": c.evidence_snippet or f"call to {c.target_symbol or c.target_file_path}"
+            })
+
+        # Construct Flow Chain: CALLERS -> TARGET -> CALLEES
+        flow_chain = []
+        for c in callers_list[:2]:
+            flow_chain.append({
+                "stage": "CALLER",
+                "name": c["name"],
+                "symbol_type": c["symbol_type"],
+                "file_path": c["file_path"],
+                "lines": c["lines"],
+                "source_code": c["source_code"]
+            })
+
+        flow_chain.append({
+            "stage": "TARGET",
+            "name": target.name,
+            "symbol_type": target.symbol_type,
+            "file_path": target.file_path,
+            "lines": f"{target.start_line}-{target.end_line}",
+            "source_code": target.source_code or f"function {target.name}()"
+        })
+
+        for c in callees_list[:3]:
+            flow_chain.append({
+                "stage": "CALLEE",
+                "name": c["name"],
+                "symbol_type": c["symbol_type"],
+                "file_path": c["file_path"],
+                "lines": c["lines"],
+                "source_code": c["source_code"]
+            })
+
+        return {
+            "target_symbol": {
+                "name": target.name,
+                "symbol_type": target.symbol_type,
+                "file_path": target.file_path,
+                "start_line": target.start_line,
+                "end_line": target.end_line,
+                "source_code": target.source_code or f"function {target.name}()"
+            },
+            "callers": callers_list,
+            "callees": callees_list,
+            "flow_chain": flow_chain,
+            "static_analysis_notice": "Call relationships detected via static AST parsing & identifier invocation analysis."
+        }
 
     async def get_architecture_flow(self, session: AsyncSession, repo_id: int) -> Dict[str, Any]:
         """Backward compatibility for existing callers."""

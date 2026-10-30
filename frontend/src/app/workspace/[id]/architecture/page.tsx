@@ -2,21 +2,34 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useParams } from "next/navigation";
-import { FolderTree, GitFork, Workflow, Boxes, Cpu, ArrowUpRight } from "lucide-react";
+import { 
+  Orbit, 
+  FolderTree, 
+  GitFork, 
+  Workflow, 
+  Boxes, 
+  Cpu, 
+  ArrowUpRight,
+  Sparkles
+} from "lucide-react";
+import ObsidianConstellationGraph from "@/components/architecture/ObsidianConstellationGraph";
 import { ProjectStructureView } from "@/components/architecture/ProjectStructureView";
 import { DependencyMapView } from "@/components/architecture/DependencyMapView";
 import { FeatureFlowView } from "@/components/architecture/FeatureFlowView";
 import NodeDetailsDrawer from "@/components/architecture/NodeDetailsDrawer";
 import CodeViewerModal from "@/components/common/CodeViewerModal";
-import { getRepository } from "@/lib/api";
-import { Repository } from "@/lib/types";
+import { getRepository, getObsidianGraph } from "@/lib/api";
+import { Repository, ObsidianGraphData, ObsidianNode } from "@/lib/types";
 
 function ArchitectureContent() {
   const params = useParams();
   const repoId = Number(params?.id);
 
-  const [viewMode, setViewMode] = useState<"structure" | "dependency" | "flow">("structure");
+  // Default to the flagship Obsidian Cosmos Graph
+  const [viewMode, setViewMode] = useState<"obsidian" | "structure" | "dependency" | "flow">("obsidian");
   const [repo, setRepo] = useState<Repository | null>(null);
+  const [obsidianData, setObsidianData] = useState<ObsidianGraphData | null>(null);
+  const [obsidianLoading, setObsidianLoading] = useState(true);
 
   // Inspected node for drawer
   const [inspectedPath, setInspectedPath] = useState<string | null>(null);
@@ -26,17 +39,46 @@ function ArchitectureContent() {
 
   useEffect(() => {
     if (!repoId || isNaN(repoId)) return;
+    
     getRepository(repoId)
       .then(setRepo)
       .catch((err) => console.error("Failed to load repo info:", err));
+
+    setObsidianLoading(true);
+    getObsidianGraph(repoId)
+      .then((data) => {
+        setObsidianData(data);
+        setObsidianLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load obsidian data:", err);
+        setObsidianLoading(false);
+      });
   }, [repoId]);
 
   return (
     <div className="relative w-full h-[calc(100vh-3.5rem)] bg-[#090d16] flex flex-col overflow-hidden">
-      {/* Top 3-Mode Switcher Bar */}
+      {/* Top 4-Mode Switcher Bar */}
       <div className="h-14 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-1 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono">
+            {/* 1. Obsidian Cosmos Graph (Flagship) */}
+            <button
+              onClick={() => {
+                setViewMode("obsidian");
+                setInspectedPath(null);
+              }}
+              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg font-semibold transition-all ${
+                viewMode === "obsidian"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/25"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Orbit className="w-3.5 h-3.5 text-indigo-300" />
+              <span>Obsidian Cosmos</span>
+            </button>
+
+            {/* 2. Project Structure */}
             <button
               onClick={() => {
                 setViewMode("structure");
@@ -48,10 +90,11 @@ function ArchitectureContent() {
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <FolderTree className="w-3.5 h-3.5 text-indigo-200" />
+              <FolderTree className="w-3.5 h-3.5 text-indigo-300" />
               <span>Project Structure</span>
             </button>
 
+            {/* 3. Dependency Map */}
             <button
               onClick={() => {
                 setViewMode("dependency");
@@ -63,10 +106,11 @@ function ArchitectureContent() {
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <GitFork className="w-3.5 h-3.5 text-sky-200" />
+              <GitFork className="w-3.5 h-3.5 text-sky-300" />
               <span>Dependency Map</span>
             </button>
 
+            {/* 4. Feature Flow */}
             <button
               onClick={() => {
                 setViewMode("flow");
@@ -78,7 +122,7 @@ function ArchitectureContent() {
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <Workflow className="w-3.5 h-3.5 text-violet-200" />
+              <Workflow className="w-3.5 h-3.5 text-violet-300" />
               <span>Feature Flow</span>
             </button>
           </div>
@@ -113,6 +157,29 @@ function ArchitectureContent() {
 
       {/* Main Exploration View Area */}
       <div className="flex-1 relative w-full h-full overflow-hidden">
+        {/* VIEW 1: Obsidian Cosmos Graph */}
+        {viewMode === "obsidian" && (
+          obsidianLoading ? (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-[#090d16] text-slate-400 font-mono text-xs">
+              <div className="w-8 h-8 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin" />
+              <span>Simulating Obsidian Cosmos constellation network...</span>
+            </div>
+          ) : obsidianData ? (
+            <ObsidianConstellationGraph
+              data={obsidianData}
+              onSelectNode={(node: ObsidianNode) => {
+                if (node.path) setInspectedPath(node.path);
+              }}
+              selectedFilePath={inspectedPath}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-500 font-mono text-xs">
+              Failed to load Obsidian graph data.
+            </div>
+          )
+        )}
+
+        {/* VIEW 2: Project Structure Tree */}
         {viewMode === "structure" && (
           <ProjectStructureView
             repoId={repoId}
@@ -121,6 +188,7 @@ function ArchitectureContent() {
           />
         )}
 
+        {/* VIEW 3: Dependency Map */}
         {viewMode === "dependency" && (
           <DependencyMapView
             repoId={repoId}
@@ -130,6 +198,7 @@ function ArchitectureContent() {
           />
         )}
 
+        {/* VIEW 4: Feature Flow */}
         {viewMode === "flow" && (
           <FeatureFlowView
             repoId={repoId}

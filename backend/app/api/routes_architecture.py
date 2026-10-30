@@ -108,10 +108,11 @@ async def get_node_details(
         "outgoing_dependencies": outgoing_list
     }
 
-# Legacy endpoints for backward compatibility
+# Obsidian Constellation Graph Endpoint
 @router.get("/obsidian/{repo_id}")
 async def get_obsidian_graph(repo_id: int, db: AsyncSession = Depends(get_db)):
-    return await graph_service.get_project_structure(db, repo_id)
+    """Interactive force-directed constellation network of directory hubs, files, and functions."""
+    return await graph_service.get_obsidian_graph(db, repo_id)
 
 @router.get("/flow/{repo_id}")
 async def get_architecture_flow(repo_id: int, db: AsyncSession = Depends(get_db)):

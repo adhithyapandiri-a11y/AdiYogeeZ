@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import * as d3 from "d3-force";
 import { 
   ZoomIn, 
@@ -8,30 +8,37 @@ import {
   RotateCcw, 
   Search, 
   Filter, 
-  Sparkles, 
   Folder, 
   FileCode, 
   Code,
-  Maximize2
+  Maximize2,
+  Sparkles,
+  Layers,
+  ArrowDownLeft,
+  ArrowUpRight
 } from "lucide-react";
 import { ObsidianGraphData, ObsidianNode, ObsidianLink } from "@/lib/types";
 
 interface ObsidianGraphProps {
   data: ObsidianGraphData;
   onSelectNode: (node: ObsidianNode) => void;
+  selectedFilePath?: string | null;
 }
 
-export default function ObsidianConstellationGraph({ data, onSelectNode }: ObsidianGraphProps) {
+export default function ObsidianConstellationGraph({ 
+  data, 
+  onSelectNode,
+  selectedFilePath
+}: ObsidianGraphProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("ALL");
-  const [zoomLevel, setZoomLevel] = useState(1);
   const [hoveredNode, setHoveredNode] = useState<ObsidianNode | null>(null);
 
   // Transform offset for pan & zoom
-  const transformRef = useRef({ x: 0, y: 0, k: 1 });
+  const transformRef = useRef({ x: 0, y: 0, k: 0.85 });
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const draggedNodeRef = useRef<any>(null);
@@ -42,9 +49,11 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
   const linksRef = useRef<any[]>([]);
 
   // Unique languages for filter
-  const languages = Array.from(
-    new Set(data.nodes.map((n) => n.language).filter(Boolean) as string[])
-  );
+  const languages = useMemo(() => {
+    return Array.from(
+      new Set(data.nodes.map((n) => n.language).filter(Boolean) as string[])
+    );
+  }, [data.nodes]);
 
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
@@ -59,7 +68,6 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
 
-    // Center transform initially
     transformRef.current = { x: width / 2, y: height / 2, k: 0.85 };
 
     // Clone data for simulation
@@ -68,19 +76,37 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
     nodesRef.current = simNodes;
     linksRef.current = simLinks;
 
-    // D3 Force Simulation setup
+    // D3 Force Simulation setup with balanced astronomical clustering
     const simulation = d3.forceSimulation(simNodes as any)
       .force(
         "link",
         d3.forceLink(simLinks as any)
           .id((d: any) => d.id)
-          .distance((d: any) => (d.type === "contains" ? 50 : 80))
-          .strength((d: any) => (d.type === "contains" ? 0.6 : 0.3))
+          .distance((d: any) => {
+            if (d.type === "has_symbol") return 24;
+            if (d.type === "contains") return 48;
+            return 110;
+          })
+          .strength((d: any) => {
+            if (d.type === "has_symbol") return 0.9;
+            if (d.type === "contains") return 0.8;
+            return 0.12;
+          })
       )
-      .force("charge", d3.forceManyBody().strength((d: any) => (d.type === "directory" ? -280 : -90)))
-      .force("collide", d3.forceCollide().radius((d: any) => (d.size || 10) + 8))
-      .force("center", d3.forceCenter(0, 0))
-      .alphaDecay(0.02);
+      .force(
+        "charge",
+        d3.forceManyBody().strength((d: any) => {
+          if (d.type === "directory") return -220;
+          if (d.type === "symbol") return -12;
+          return -45;
+        })
+      )
+      .force(
+        "collide",
+        d3.forceCollide().radius((d: any) => (d.size || 8) + 5)
+      )
+      .force("center", d3.forceCenter(0, 0).strength(0.04))
+      .alphaDecay(0.025);
 
     simulationRef.current = simulation;
 
@@ -97,11 +123,11 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
       ctx.translate(x, y);
       ctx.scale(k, k);
 
-      // 1. Draw subtle background coordinate grid
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+      // 1. Subtle Dark Coordinate Grid (Professional, non-intrusive)
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.02)";
       ctx.lineWidth = 1 / k;
-      const gridSize = 100;
-      const bounds = 3000;
+      const gridSize = 120;
+      const bounds = 3200;
       for (let gx = -bounds; gx <= bounds; gx += gridSize) {
         ctx.beginPath();
         ctx.moveTo(gx, -bounds);
@@ -115,7 +141,7 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
         ctx.stroke();
       }
 
-      // Pre-compute connected nodes set for hover highlighting (Obsidian focus effect)
+      // Pre-compute connected nodes set for hover highlighting
       const connectedNodeIds = new Set<string>();
       if (hoveredNode) {
         connectedNodeIds.add(hoveredNode.id);
@@ -127,7 +153,7 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
         });
       }
 
-      // 2. Draw Links (import & containment edges)
+      // 2. Draw Links (Containment, Imports, Satellite Calls)
       simLinks.forEach((link: any) => {
         if (!link.source || !link.target) return;
         const s = link.source;
@@ -137,17 +163,24 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
           ? (s.id === hoveredNode.id || t.id === hoveredNode.id)
           : false;
 
-        const alpha = hoveredNode 
-          ? (isConnected ? 0.8 : 0.08) 
-          : (link.type === "contains" ? 0.15 : 0.3);
+        let strokeColor = "rgba(148, 163, 184, 0.18)";
+        let strokeW = 1 / k;
 
-        ctx.strokeStyle = isConnected 
-          ? "rgba(139, 92, 246, 0.9)" 
-          : link.type === "contains" 
-            ? `rgba(99, 102, 241, ${alpha})` 
-            : `rgba(148, 163, 184, ${alpha})`;
+        if (isConnected) {
+          strokeColor = "rgba(129, 140, 248, 0.85)";
+          strokeW = 2 / k;
+        } else if (hoveredNode) {
+          strokeColor = "rgba(148, 163, 184, 0.04)";
+        } else if (link.type === "contains") {
+          strokeColor = "rgba(99, 102, 241, 0.12)";
+          strokeW = 1 / k;
+        } else if (link.type === "has_symbol") {
+          strokeColor = "rgba(56, 189, 248, 0.12)";
+          strokeW = 0.8 / k;
+        }
 
-        ctx.lineWidth = isConnected ? 2.5 / k : (link.type === "contains" ? 1 / k : 1.5 / k);
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeW;
 
         ctx.beginPath();
         ctx.moveTo(s.x, s.y);
@@ -158,54 +191,72 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
       // 3. Draw Nodes (Constellation dots)
       simNodes.forEach((node: any) => {
         const isHovered = hoveredNode?.id === node.id;
+        const isSelected = selectedFilePath && (node.path === selectedFilePath || node.id === `file:${selectedFilePath}`);
         const isConnected = hoveredNode ? connectedNodeIds.has(node.id) : true;
         const isSearchMatch = searchQuery && node.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-        // Opacity dimming if hover focus is active
-        const opacity = hoveredNode ? (isConnected ? 1 : 0.15) : 1;
-        ctx.globalAlpha = opacity;
-
-        const radius = (node.size || 10) * (isHovered ? 1.3 : 1);
-
-        // A. Directory Hub glowing aura
-        if (node.type === "directory") {
-          const gradient = ctx.createRadialGradient(node.x, node.y, radius * 0.4, node.x, node.y, radius * 2);
-          gradient.addColorStop(0, "rgba(139, 92, 246, 0.5)");
-          gradient.addColorStop(1, "rgba(139, 92, 246, 0)");
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, radius * 2, 0, Math.PI * 2);
-          ctx.fill();
+        // Language filter check
+        if (selectedLanguage !== "ALL" && node.type === "file" && node.language !== selectedLanguage) {
+          return;
         }
 
-        // B. Node Core Dot
-        ctx.fillStyle = isSearchMatch ? "#fbbf24" : node.color || "#818cf8";
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
-        ctx.fill();
+        // Opacity dimming on focus
+        const opacity = hoveredNode ? (isConnected ? 1 : 0.12) : 1;
+        ctx.globalAlpha = opacity;
 
-        // C. Border Ring
-        ctx.strokeStyle = isHovered 
-          ? "#ffffff" 
-          : isSearchMatch 
-            ? "#f59e0b" 
-            : "rgba(255, 255, 255, 0.25)";
-        ctx.lineWidth = (isHovered ? 2.5 : 1) / k;
-        ctx.stroke();
+        const radius = (node.size || 8) * (isHovered ? 1.25 : 1);
 
-        // D. Labels (Dynamic Level of Detail)
+        // A. Directory Hubs (Concentric subtle rings - No harsh neon)
+        if (node.type === "directory") {
+          // Outer subtle orbital ring
+          ctx.strokeStyle = isHovered ? "rgba(129, 140, 248, 0.6)" : "rgba(99, 102, 241, 0.2)";
+          ctx.lineWidth = 1 / k;
+          ctx.setLineDash([3 / k, 3 / k]);
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius + 6, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Core dot
+          ctx.fillStyle = isHovered ? "#6366f1" : "#4f46e5";
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = isHovered ? "#ffffff" : "rgba(255, 255, 255, 0.35)";
+          ctx.lineWidth = (isHovered ? 2 : 1) / k;
+          ctx.stroke();
+        } 
+        // B. File Nodes & Symbols
+        else {
+          ctx.fillStyle = isSearchMatch ? "#fbbf24" : node.color || "#818cf8";
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = isHovered || isSelected
+            ? "#ffffff" 
+            : isSearchMatch 
+              ? "#f59e0b" 
+              : "rgba(255, 255, 255, 0.25)";
+          ctx.lineWidth = (isHovered || isSelected ? 2 : 0.8) / k;
+          ctx.stroke();
+        }
+
+        // C. Clean Typography Labels (Level of Detail)
         const showLabel = 
           node.type === "directory" || 
           isHovered || 
+          isSelected ||
           isSearchMatch || 
-          (k > 0.8 && node.type === "file" && (node.inDegree || 0) > 1);
+          (k > 0.85 && node.type === "file" && (node.inDegree || 0) > 0);
 
         if (showLabel) {
-          ctx.font = `${node.type === "directory" ? "bold 12px" : "10px"} -apple-system, sans-serif`;
-          ctx.fillStyle = isHovered ? "#ffffff" : "rgba(226, 232, 240, 0.9)";
+          ctx.font = `${node.type === "directory" ? "600 11px" : "10px"} ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+          ctx.fillStyle = isHovered || isSelected ? "#ffffff" : "rgba(226, 232, 240, 0.85)";
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
-          ctx.fillText(node.name, node.x, node.y + radius + 3 / k);
+          ctx.fillText(node.name, node.x, node.y + radius + 4 / k);
         }
 
         ctx.globalAlpha = 1;
@@ -216,7 +267,6 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
 
     simulation.on("tick", render);
 
-    // Resize handler
     const handleResize = () => {
       const w = container.clientWidth;
       const h = container.clientHeight;
@@ -232,7 +282,7 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
       simulation.stop();
       window.removeEventListener("resize", handleResize);
     };
-  }, [data, hoveredNode, searchQuery]);
+  }, [data, hoveredNode, searchQuery, selectedLanguage, selectedFilePath]);
 
   // Mouse interaction: Hover, Drag, Zoom, Pan
   const getCanvasMousePos = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -249,13 +299,11 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isDraggingRef.current) {
       if (draggedNodeRef.current) {
-        // Dragging a specific node
         const pos = getCanvasMousePos(e);
         draggedNodeRef.current.fx = pos.x;
         draggedNodeRef.current.fy = pos.y;
         simulationRef.current?.alphaTarget(0.3).restart();
       } else {
-        // Panning the canvas
         const dx = e.clientX - dragStartRef.current.x;
         const dy = e.clientY - dragStartRef.current.y;
         transformRef.current.x += dx;
@@ -270,7 +318,7 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
     let found: any = null;
     for (const node of nodesRef.current) {
       const dist = Math.hypot(node.x - pos.x, node.y - pos.y);
-      if (dist <= (node.size || 10) + 4) {
+      if (dist <= (node.size || 8) + 4) {
         found = node;
         break;
       }
@@ -285,7 +333,7 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
     const pos = getCanvasMousePos(e);
     for (const node of nodesRef.current) {
       const dist = Math.hypot(node.x - pos.x, node.y - pos.y);
-      if (dist <= (node.size || 10) + 4) {
+      if (dist <= (node.size || 8) + 4) {
         draggedNodeRef.current = node;
         node.fx = node.x;
         node.fy = node.y;
@@ -294,7 +342,7 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
     }
   };
 
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMouseUp = () => {
     isDraggingRef.current = false;
     if (draggedNodeRef.current) {
       draggedNodeRef.current.fx = null;
@@ -308,7 +356,7 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
     const pos = getCanvasMousePos(e);
     for (const node of nodesRef.current) {
       const dist = Math.hypot(node.x - pos.x, node.y - pos.y);
-      if (dist <= (node.size || 10) + 4) {
+      if (dist <= (node.size || 8) + 4) {
         onSelectNode(node);
         break;
       }
@@ -317,8 +365,8 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newK = Math.min(3, Math.max(0.2, transformRef.current.k * zoomFactor));
+    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+    const newK = Math.min(3.2, Math.max(0.18, transformRef.current.k * zoomFactor));
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -329,7 +377,6 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
     transformRef.current.x = mouseX - (mouseX - transformRef.current.x) * (newK / transformRef.current.k);
     transformRef.current.y = mouseY - (mouseY - transformRef.current.y) * (newK / transformRef.current.k);
     transformRef.current.k = newK;
-    setZoomLevel(newK);
   };
 
   const handleResetZoom = () => {
@@ -337,7 +384,6 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
     const w = containerRef.current.clientWidth;
     const h = containerRef.current.clientHeight;
     transformRef.current = { x: w / 2, y: h / 2, k: 0.85 };
-    setZoomLevel(0.85);
   };
 
   return (
@@ -354,25 +400,25 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
       />
 
       {/* Floating Top Controls & Search Bar */}
-      <div className="absolute top-4 left-4 z-20 flex items-center space-x-2">
+      <div className="absolute top-3.5 left-4 z-20 flex items-center space-x-2">
         <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search files or modules..."
+            placeholder="Search constellation..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-4 py-2 w-64 rounded-xl bg-slate-900/90 border border-white/10 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 backdrop-blur-md shadow-xl"
+            className="pl-8 pr-3 py-1.5 w-60 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/80 font-mono backdrop-blur-md shadow-xl transition-all"
           />
         </div>
 
         {/* Language Filter */}
-        <div className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-white/10 backdrop-blur-md text-xs">
-          <Filter className="w-3.5 h-3.5 text-slate-400 mr-1" />
+        <div className="flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-xs font-mono">
+          <Filter className="w-3 h-3 text-slate-500 mr-1" />
           <button
             onClick={() => setSelectedLanguage("ALL")}
-            className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-colors ${
-              selectedLanguage === "ALL" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"
+            className={`px-2 py-0.5 rounded-lg text-[11px] transition-colors ${
+              selectedLanguage === "ALL" ? "bg-indigo-600 text-white font-semibold" : "text-slate-400 hover:text-slate-200"
             }`}
           >
             All
@@ -381,8 +427,8 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
             <button
               key={lang}
               onClick={() => setSelectedLanguage(lang)}
-              className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-colors ${
-                selectedLanguage === lang ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"
+              className={`px-2 py-0.5 rounded-lg text-[11px] transition-colors ${
+                selectedLanguage === lang ? "bg-indigo-600 text-white font-semibold" : "text-slate-400 hover:text-slate-200"
               }`}
             >
               {lang}
@@ -392,76 +438,86 @@ export default function ObsidianConstellationGraph({ data, onSelectNode }: Obsid
       </div>
 
       {/* Bottom Left Legend */}
-      <div className="absolute bottom-4 left-4 z-20 p-3 rounded-xl bg-slate-900/85 border border-white/10 backdrop-blur-md text-xs space-y-2 shadow-2xl">
-        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-          <span>Obsidian Cosmos Legend</span>
+      <div className="absolute bottom-4 left-4 z-20 p-3 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-xs space-y-2 shadow-2xl font-mono">
+        <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
+          <Sparkles className="w-3 h-3 text-indigo-400" />
+          <span>Obsidian Cosmos Network</span>
         </div>
         <div className="space-y-1.5 text-[11px]">
           <div className="flex items-center space-x-2">
-            <span className="w-4 h-4 rounded-full bg-violet-600/80 border border-violet-400 shadow-sm shadow-violet-500"></span>
-            <span className="text-slate-300 font-medium">Directory Hub (Large Dot)</span>
+            <span className="w-3.5 h-3.5 rounded-full bg-indigo-600 border border-indigo-400"></span>
+            <span className="text-slate-300">Directory Hub (Major folder)</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-blue-500 border border-blue-300"></span>
-            <span className="text-slate-300">Source File (Size = In/Out Links)</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span className="text-slate-300">Source File (Sized by links)</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-            <span className="text-slate-400">Satellite Symbol (Function/Class)</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+            <span className="text-slate-400">Function Satellite</span>
           </div>
         </div>
       </div>
 
       {/* Bottom Right Zoom / Pan Controls */}
-      <div className="absolute bottom-4 right-4 z-20 flex items-center space-x-1 p-1 rounded-xl bg-slate-900/90 border border-white/10 backdrop-blur-md shadow-xl">
+      <div className="absolute bottom-4 right-4 z-20 flex items-center space-x-1 p-1 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md shadow-xl">
         <button
           onClick={() => {
-            transformRef.current.k = Math.min(3, transformRef.current.k * 1.2);
-            setZoomLevel(transformRef.current.k);
+            transformRef.current.k = Math.min(3.2, transformRef.current.k * 1.2);
           }}
-          className="p-2 rounded-lg hover:bg-slate-800 text-slate-300 transition-colors"
+          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 transition-colors"
           title="Zoom In"
         >
-          <ZoomIn className="w-4 h-4" />
+          <ZoomIn className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => {
-            transformRef.current.k = Math.max(0.2, transformRef.current.k * 0.8);
-            setZoomLevel(transformRef.current.k);
+            transformRef.current.k = Math.max(0.18, transformRef.current.k * 0.8);
           }}
-          className="p-2 rounded-lg hover:bg-slate-800 text-slate-300 transition-colors"
+          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 transition-colors"
           title="Zoom Out"
         >
-          <ZoomOut className="w-4 h-4" />
+          <ZoomOut className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleResetZoom}
-          className="p-2 rounded-lg hover:bg-slate-800 text-slate-300 transition-colors"
+          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 transition-colors"
           title="Reset View"
         >
-          <RotateCcw className="w-4 h-4" />
+          <RotateCcw className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Hover Info Tooltip */}
+      {/* Hover Info Tooltip (Clean, non-neon glass card) */}
       {hoveredNode && (
-        <div className="absolute top-4 right-4 z-20 p-3 rounded-xl bg-[#0f172a]/95 border border-white/10 backdrop-blur-md shadow-2xl max-w-xs text-xs space-y-1 animate-in fade-in duration-100 pointer-events-none">
+        <div className="absolute top-3.5 right-4 z-20 p-3 rounded-xl bg-slate-900/95 border border-slate-800 backdrop-blur-xl shadow-2xl max-w-xs text-xs space-y-1.5 animate-in fade-in duration-100 pointer-events-none font-mono">
           <div className="font-semibold text-slate-100 flex items-center space-x-1.5">
             {hoveredNode.type === "directory" ? (
-              <Folder className="w-3.5 h-3.5 text-violet-400" />
+              <Folder className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
             ) : hoveredNode.type === "file" ? (
-              <FileCode className="w-3.5 h-3.5 text-blue-400" />
+              <FileCode className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             ) : (
-              <Code className="w-3.5 h-3.5 text-cyan-400" />
+              <Code className="w-3.5 h-3.5 text-sky-400 shrink-0" />
             )}
             <span className="truncate">{hoveredNode.name}</span>
           </div>
-          <div className="text-[11px] text-slate-400 truncate">{hoveredNode.path}</div>
+          <div className="text-[10px] text-slate-400 truncate">{hoveredNode.path}</div>
           {hoveredNode.type === "file" && (
-            <div className="pt-1 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-400">
-              <span>{hoveredNode.language}</span>
-              <span>{hoveredNode.inDegree || 0} in • {hoveredNode.outDegree || 0} out</span>
+            <div className="pt-1.5 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
+              <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">{hoveredNode.language}</span>
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-0.5 text-emerald-400">
+                  <ArrowDownLeft className="w-3 h-3" /> {hoveredNode.inDegree || 0}
+                </span>
+                <span className="flex items-center gap-0.5 text-indigo-400">
+                  <ArrowUpRight className="w-3 h-3" /> {hoveredNode.outDegree || 0}
+                </span>
+              </div>
+            </div>
+          )}
+          {hoveredNode.type === "directory" && (
+            <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+              <span>{hoveredNode.fileCount || 0} contained files</span>
             </div>
           )}
         </div>
