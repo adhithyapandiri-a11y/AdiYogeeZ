@@ -164,7 +164,7 @@ test("Obsidian Cosmos renders smoothly with Cytoscape and handles search and sel
 
   // Zoom controls
   await page.getByRole("button", { name: "Zoom in" }).click();
-  await page.getByRole("button", { name: "Fit graph to view" }).click();
+  await page.getByRole("button", { name: "Reset zoom" }).click();
 
   // Take screenshot for visual record
   await page.screenshot({ path: "test-results/obsidian-cosmos-fixed.png" });

@@ -1,16 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import cytoscape, { type Core, type ElementDefinition, type NodeSingular } from "cytoscape";
-import {
-  forceSimulation,
-  forceLink,
-  forceManyBody,
-  forceCollide,
-  forceCenter,
-  forceX,
-  forceY,
-} from "d3-force";
+import * as d3 from "d3-force";
 import {
   ZoomIn,
   ZoomOut,
@@ -19,12 +10,10 @@ import {
   Filter,
   Maximize2,
   Sparkles,
-  Layers,
   X,
   FileCode,
   Folder,
   Code,
-  ExternalLink,
 } from "lucide-react";
 import { ObsidianGraphData, ObsidianNode, ObsidianLink } from "@/lib/types";
 
@@ -39,125 +28,122 @@ export default function ObsidianConstellationGraph({
   onSelectNode,
   selectedFilePath,
 }: ObsidianGraphProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const cyRef = useRef<Core | null>(null);
-  const positionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const handlersRef = useRef({ onSelectNode });
 
-  useEffect(() => {
-    handlersRef.current = { onSelectNode };
-  }, [onSelectNode]);
-
+  // Top bar UI states
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("ALL");
   const [hoveredNode, setHoveredNode] = useState<ObsidianNode | null>(null);
   const [zoomPercent, setZoomPercent] = useState(100);
 
-  // Extract unique languages
+  // Transform offset for pan & zoom (maintained in ref for 60fps render loop)
+  const transformRef = useRef({ x: 0, y: 0, k: 0.85 });
+  const isDraggingCanvasRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const draggedNodeRef = useRef<any>(null);
+
+  // Camera smooth fly-to animation ref
+  const cameraAnimRef = useRef<{
+    startX: number;
+    startY: number;
+    startK: number;
+    targetX: number;
+    targetY: number;
+    targetK: number;
+    startTime: number;
+    duration: number;
+  } | null>(null);
+
+  // Live simulation & data refs (completely decoupled from React state renders)
+  const simulationRef = useRef<any>(null);
+  const nodesRef = useRef<any[]>([]);
+  const linksRef = useRef<any[]>([]);
+  const animFrameIdRef = useRef<number | null>(null);
+
+  // Filters & selection refs for immediate access in render loop
+  const searchQueryRef = useRef(searchQuery);
+  searchQueryRef.current = searchQuery;
+  const selectedLanguageRef = useRef(selectedLanguage);
+  selectedLanguageRef.current = selectedLanguage;
+  const selectedFilePathRef = useRef(selectedFilePath);
+  selectedFilePathRef.current = selectedFilePath;
+  const hoveredNodeRef = useRef<ObsidianNode | null>(null);
+  const handlersRef = useRef({ onSelectNode });
+  handlersRef.current = { onSelectNode };
+
+  // Unique languages for filter pills
   const languages = useMemo(() => {
     return Array.from(
-      new Set(
-        data.nodes
-          .map((n) => n.language)
-          .filter(Boolean) as string[]
-      )
+      new Set(data.nodes.map((n) => n.language).filter(Boolean) as string[])
     ).sort();
   }, [data.nodes]);
 
-  // Synchronize visual state (selection, search highlights, language filters)
-  const syncVisualState = useCallback(() => {
-    const cy = cyRef.current;
-    if (!cy) return;
+  // Coordinate helper: Canvas client space to World space
+  const screenToWorld = useCallback((clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const { x, y, k } = transformRef.current;
+    return {
+      x: (clientX - rect.left - x) / k,
+      y: (clientY - rect.top - y) / k,
+    };
+  }, []);
 
-    cy.batch(() => {
-      // 1. Reset transient classes
-      cy.elements().removeClass("hovered connected highlighted dimmed search-match filtered-out selected");
+  // Smoothly fly camera to a target world coordinate
+  const flyTo = useCallback((targetWorldX: number, targetWorldY: number, targetZoom = 1.35) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const w = container.clientWidth;
+    const h = container.clientHeight;
 
-      // 2. Language filtering
-      if (selectedLanguage !== "ALL") {
-        cy.nodes().forEach((node) => {
-          const type = node.data("type");
-          const lang = node.data("language");
-          // Keep directories visible so hierarchy remains sensible
-          if (type === "file" && lang !== selectedLanguage) {
-            node.addClass("filtered-out");
-            node.connectedEdges().addClass("filtered-out");
-          }
-          if (type === "symbol") {
-            const parentLang = node.data("parentLanguage");
-            if (parentLang && parentLang !== selectedLanguage) {
-              node.addClass("filtered-out");
-              node.connectedEdges().addClass("filtered-out");
-            }
-          }
-        });
-      }
+    const current = transformRef.current;
+    cameraAnimRef.current = {
+      startX: current.x,
+      startY: current.y,
+      startK: current.k,
+      targetX: w / 2 - targetWorldX * targetZoom,
+      targetY: h / 2 - targetWorldY * targetZoom,
+      targetK: targetZoom,
+      startTime: performance.now(),
+      duration: 450,
+    };
+  }, []);
 
-      // 3. Search query highlighting
-      const query = searchQuery.trim().toLowerCase();
-      if (query) {
-        let anyMatch = false;
-        cy.nodes().forEach((node) => {
-          if (node.hasClass("filtered-out")) return;
-          const name = (node.data("label") || "").toLowerCase();
-          const path = (node.data("path") || "").toLowerCase();
-          if (name.includes(query) || path.includes(query)) {
-            node.addClass("search-match");
-            anyMatch = true;
-          } else {
-            node.addClass("dimmed");
-          }
-        });
-        if (anyMatch) {
-          cy.edges().addClass("dimmed");
-        }
-      }
-
-      // 4. File selection highlight
-      if (selectedFilePath) {
-        const target = cy.nodes().filter((n) => {
-          const p = n.data("path");
-          const id = n.data("id");
-          return p === selectedFilePath || id === `file:${selectedFilePath}`;
-        });
-
-        if (target.length > 0) {
-          target.addClass("selected");
-          target.connectedEdges().addClass("highlighted");
-          target.neighborhood().nodes().addClass("connected");
-          if (!query) {
-            cy.elements().not(target).not(target.neighborhood()).not(target.connectedEdges()).addClass("dimmed");
-          }
-        }
-      }
-    });
-  }, [searchQuery, selectedLanguage, selectedFilePath]);
-
-  // Initialize layout once per data snapshot using D3 Force -> Cytoscape preset layout
+  // Initialize simulation ONCE when data changes
   useEffect(() => {
-    if (!containerRef.current || !data.nodes || data.nodes.length === 0) return;
+    if (!canvasRef.current || !containerRef.current || !data.nodes || data.nodes.length === 0) return;
 
-    const validNodeIds = new Set(data.nodes.map((n) => n.id));
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
 
-    // 1. D3 Force layout pre-calculation (Deterministic & Static)
-    interface SimPoint {
-      id: string;
-      type: string;
-      size: number;
-      x: number;
-      y: number;
-    }
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
 
-    const simPoints: SimPoint[] = data.nodes.map((n, i) => {
-      // Sunflower spiral initial placement for balanced dispersion
+    // Center transform initially
+    transformRef.current = { x: width / 2, y: height / 2, k: 0.85 };
+    setZoomPercent(85);
+
+    // Deep clone data so D3 mutations don't alter external props
+    const validIds = new Set(data.nodes.map((n) => n.id));
+
+    // Sunflower spiral initialization for clean dispersion
+    const simNodes = data.nodes.map((d, i) => {
       const phi = i * 2.39996;
-      const r = Math.sqrt(i + 1) * 38;
+      const r = Math.sqrt(i + 1) * 36;
       return {
-        id: n.id,
-        type: n.type,
-        size: n.size || (n.type === "directory" ? 24 : n.type === "file" ? 12 : 6),
+        ...d,
         x: Math.cos(phi) * r,
         y: Math.sin(phi) * r,
+        vx: 0,
+        vy: 0,
+        size: d.size || (d.type === "directory" ? 24 : d.type === "file" ? 11 : 6),
       };
     });
 
@@ -165,7 +151,7 @@ export default function ObsidianConstellationGraph({
       .filter((l) => {
         const s = typeof l.source === "object" ? l.source.id : l.source;
         const t = typeof l.target === "object" ? l.target.id : l.target;
-        return validNodeIds.has(s) && validNodeIds.has(t);
+        return validIds.has(s) && validIds.has(t);
       })
       .map((l) => ({
         source: typeof l.source === "object" ? l.source.id : l.source,
@@ -173,460 +159,519 @@ export default function ObsidianConstellationGraph({
         type: l.type,
       }));
 
-    const simulation = forceSimulation(simPoints as any)
+    nodesRef.current = simNodes;
+    linksRef.current = simLinks;
+
+    // Fast node lookup map
+    const nodeMap = new Map<string, any>();
+    simNodes.forEach((n) => nodeMap.set(n.id, n));
+
+    // D3 Force Simulation setup with non-overlapping physical collision bubbles
+    const simulation = d3
+      .forceSimulation(simNodes as any)
       .force(
         "link",
-        forceLink(simLinks as any)
+        d3
+          .forceLink(simLinks as any)
           .id((d: any) => d.id)
-          .distance((l: any) => {
-            if (l.type === "has_symbol") return 22;
-            if (l.type === "contains") return 48;
+          .distance((d: any) => {
+            if (d.type === "has_symbol") return 22;
+            if (d.type === "contains") return 50;
             return 115;
           })
-          .strength((l: any) => {
-            if (l.type === "has_symbol") return 0.95;
-            if (l.type === "contains") return 0.85;
-            return 0.15;
+          .strength((d: any) => {
+            if (d.type === "has_symbol") return 0.85;
+            if (d.type === "contains") return 0.75;
+            return 0.16;
           })
       )
       .force(
         "charge",
-        forceManyBody().strength((d: any) => {
-          if (d.type === "directory") return -240;
-          if (d.type === "symbol") return -14;
-          return -55;
+        d3.forceManyBody().strength((d: any) => {
+          if (d.type === "directory") return -320;
+          if (d.type === "symbol") return -16;
+          return -75;
         })
       )
+      // Solid collision cushion to prevent bubbles from overlapping each other!
       .force(
         "collide",
-        forceCollide().radius((d: any) => (d.size || 8) + 7)
+        d3
+          .forceCollide()
+          .radius((d: any) => {
+            if (d.type === "directory") return 36;
+            if (d.type === "file") return (d.size || 11) + 14;
+            return 9;
+          })
+          .iterations(3)
       )
-      .force("center", forceCenter(0, 0).strength(0.04))
-      .force("x", forceX(0).strength(0.018))
-      .force("y", forceY(0).strength(0.018))
-      .stop();
+      .force("center", d3.forceCenter(0, 0).strength(0.025))
+      .force("x", d3.forceX(0).strength(0.015))
+      .force("y", d3.forceY(0).strength(0.015))
+      .alphaDecay(0.018)
+      .alphaMin(0.001);
 
-    // Run 160 static ticks synchronously once
-    simulation.tick(160);
+    // Warm up the simulation statically so bubbles take an organic initial shape
+    for (let i = 0; i < 90; ++i) simulation.tick();
 
-    // Save stable positions
-    positionsRef.current = new Map(
-      simPoints.map((p) => [p.id, { x: p.x || 0, y: p.y || 0 }])
-    );
+    // Maintain a subtle ambient floating motion ("animate the bubbles with real physics")
+    simulation.alphaTarget(0.003);
+    simulationRef.current = simulation;
 
-    // 2. Build Cytoscape element definitions
-    const elements: ElementDefinition[] = [
-      ...data.nodes.map((node) => {
-        const pos = positionsRef.current.get(node.id) || { x: 0, y: 0 };
-        const isDir = node.type === "directory";
-        const isSym = node.type === "symbol";
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-        return {
-          data: {
-            id: node.id,
-            label: node.name,
-            type: node.type,
-            path: node.path,
-            language: node.language || "",
-            size: isDir ? 26 : isSym ? 6 : Math.max(10, Math.min(18, (node.size || 10) * 0.8)),
-            color: node.color || (isDir ? "#6366f1" : isSym ? "#38bdf8" : "#818cf8"),
-            fontSize: isDir ? 11 : isSym ? 8 : 10,
-            rawNode: node,
-          },
-          position: { x: pos.x, y: pos.y },
-          classes: `${node.type} ${node.language ? `lang-${node.language}` : ""}`,
-        };
-      }),
-      ...simLinks.map((link, idx) => {
-        const sourceId = typeof link.source === "object" ? (link.source as any).id : link.source;
-        const targetId = typeof link.target === "object" ? (link.target as any).id : link.target;
-        return {
-          data: {
-            id: `edge-${idx}-${sourceId}-${targetId}`,
-            source: sourceId,
-            target: targetId,
-            type: link.type,
-          },
-          classes: `${link.type}`,
-        };
-      }),
-    ];
+    // 60 FPS Render Loop
+    const render = () => {
+      // 1. Interpolate camera fly-to if active
+      if (cameraAnimRef.current) {
+        const anim = cameraAnimRef.current;
+        const now = performance.now();
+        const progress = Math.min(1, (now - anim.startTime) / anim.duration);
+        // EaseInOutCubic
+        const ease =
+          progress < 0.5
+            ? 4 * progress * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
-    // 3. Initialize Cytoscape
-    const cy = cytoscape({
-      container: containerRef.current,
-      elements,
-      layout: { name: "preset" },
-      minZoom: 0.12,
-      maxZoom: 3.5,
-      selectionType: "single",
-      boxSelectionEnabled: false,
-      autoungrabify: false,
-      style: [
-        // Base Node Style
-        {
-          selector: "node",
-          style: {
-            "background-color": "data(color)",
-            width: "data(size)",
-            height: "data(size)",
-            label: "data(label)",
-            "font-family": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-            "font-size": "data(fontSize)",
-            color: "rgba(226, 232, 240, 0.85)",
-            "text-valign": "bottom",
-            "text-margin-y": 5,
-            "text-outline-color": "#090d16",
-            "text-outline-width": 2.5,
-            "text-outline-opacity": 0.95,
-            "min-zoomed-font-size": 8,
-            "border-width": 0,
-            "overlay-opacity": 0,
-            "transition-property": "opacity, border-width, border-color",
-            "transition-duration": 0.15,
-          },
-        },
-        // Directory Hub Style (Concentric orbital aura)
-        {
-          selector: "node.directory",
-          style: {
-            shape: "ellipse",
-            "border-width": 2,
-            "border-color": "rgba(129, 140, 248, 0.65)",
-            "border-style": "dashed",
-            "background-color": "#4f46e5",
-            color: "#ffffff",
-            "font-weight": 600,
-            "font-size": 11,
-            "text-margin-y": 7,
-          },
-        },
-        // File Star Node Style
-        {
-          selector: "node.file",
-          style: {
-            shape: "ellipse",
-            "border-width": 1,
-            "border-color": "rgba(255, 255, 255, 0.35)",
-            "border-style": "solid",
-          },
-        },
-        // Symbol Satellite Node Style
-        {
-          selector: "node.symbol",
-          style: {
-            shape: "ellipse",
-            "border-width": 0.5,
-            "border-color": "rgba(255, 255, 255, 0.2)",
-            color: "#94a3b8",
-            "font-size": 8,
-          },
-        },
-        // Base Edge Style
-        {
-          selector: "edge",
-          style: {
-            width: 1,
-            "line-color": "rgba(148, 163, 184, 0.15)",
-            "curve-style": "straight",
-            "overlay-opacity": 0,
-            "transition-property": "line-color, width, opacity",
-            "transition-duration": 0.15,
-          },
-        },
-        // Containment Links
-        {
-          selector: "edge.contains",
-          style: {
-            "line-color": "rgba(99, 102, 241, 0.22)",
-            "line-style": "dashed",
-            width: 1,
-          },
-        },
-        // Symbol Links
-        {
-          selector: "edge.has_symbol",
-          style: {
-            "line-color": "rgba(56, 189, 248, 0.18)",
-            width: 0.8,
-          },
-        },
-        // Imports / Calls Links
-        {
-          selector: "edge.imports",
-          style: {
-            "line-color": "rgba(129, 140, 248, 0.4)",
-            width: 1.2,
-            "target-arrow-shape": "triangle",
-            "target-arrow-color": "rgba(129, 140, 248, 0.6)",
-            "arrow-scale": 0.6,
-          },
-        },
-        // Hover & Interaction Overrides
-        {
-          selector: "node.hovered",
-          style: {
-            "border-width": 3,
-            "border-color": "#ffffff",
-            "border-style": "solid",
-            color: "#ffffff",
-            "font-weight": 700,
-            opacity: 1,
-            "z-index": 999,
-          },
-        },
-        {
-          selector: "node.connected",
-          style: {
-            opacity: 1,
-            "border-width": 2,
-            "border-color": "#a5b4fc",
-            "border-style": "solid",
-            color: "#ffffff",
-            "z-index": 900,
-          },
-        },
-        {
-          selector: "edge.highlighted",
-          style: {
-            width: 2.2,
-            "line-color": "#818cf8",
-            "target-arrow-color": "#818cf8",
-            opacity: 1,
-            "z-index": 900,
-          },
-        },
-        {
-          selector: "node.dimmed",
-          style: {
-            opacity: 0.1,
-          },
-        },
-        {
-          selector: "edge.dimmed",
-          style: {
-            opacity: 0.03,
-          },
-        },
-        // Selected File Node
-        {
-          selector: "node.selected",
-          style: {
-            "border-width": 3.5,
-            "border-color": "#38bdf8",
-            "border-style": "solid",
-            color: "#38bdf8",
-            "font-weight": 700,
-            opacity: 1,
-            "z-index": 1000,
-          },
-        },
-        // Search Matches
-        {
-          selector: "node.search-match",
-          style: {
-            "background-color": "#fbbf24",
-            "border-width": 3,
-            "border-color": "#f59e0b",
-            "border-style": "solid",
-            color: "#fbbf24",
-            "font-weight": 700,
-            opacity: 1,
-            "z-index": 850,
-          },
-        },
-        // Language Filter Out
-        {
-          selector: "node.filtered-out",
-          style: {
-            opacity: 0.04,
-            events: "no",
-          },
-        },
-        {
-          selector: "edge.filtered-out",
-          style: {
-            opacity: 0.02,
-            events: "no",
-          },
-        },
-      ],
-    });
+        transformRef.current.x = anim.startX + (anim.targetX - anim.startX) * ease;
+        transformRef.current.y = anim.startY + (anim.targetY - anim.startY) * ease;
+        transformRef.current.k = anim.startK + (anim.targetK - anim.startK) * ease;
+        setZoomPercent(Math.round(transformRef.current.k * 100));
 
-    cyRef.current = cy;
-
-    // Center and fit nicely initially
-    cy.fit(undefined, 50);
-    setZoomPercent(Math.round(cy.zoom() * 100));
-
-    // Interaction Handlers
-    cy.on("zoom", () => {
-      setZoomPercent(Math.round(cy.zoom() * 100));
-    });
-
-    // Node Click / Tap
-    cy.on("tap", "node", (evt) => {
-      const node = evt.target as NodeSingular;
-      const rawNode = node.data("rawNode") as ObsidianNode;
-      if (rawNode) {
-        handlersRef.current.onSelectNode(rawNode);
+        if (progress >= 1) {
+          cameraAnimRef.current = null;
+        }
       }
-    });
 
-    // Node Hover (Mouseover) - Instant CSS Class Toggle, 0 Physics Simulation
-    cy.on("mouseover", "node", (evt) => {
-      const node = evt.target as NodeSingular;
-      const rawNode = node.data("rawNode") as ObsidianNode;
-      setHoveredNode(rawNode);
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(dpr, dpr);
 
-      cy.batch(() => {
-        cy.elements().addClass("dimmed");
-        node.removeClass("dimmed").addClass("hovered");
-        const neighborhood = node.neighborhood();
-        neighborhood.removeClass("dimmed");
-        node.connectedEdges().addClass("highlighted");
-        neighborhood.nodes().addClass("connected");
+      const { x, y, k } = transformRef.current;
+      ctx.translate(x, y);
+      ctx.scale(k, k);
+
+      // Subtle celestial coordinate grid
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.025)";
+      ctx.lineWidth = 1 / k;
+      const gridSize = 100;
+      const bounds = 3600;
+      for (let gx = -bounds; gx <= bounds; gx += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(gx, -bounds);
+        ctx.lineTo(gx, bounds);
+        ctx.stroke();
+      }
+      for (let gy = -bounds; gy <= bounds; gy += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(-bounds, gy);
+        ctx.lineTo(bounds, gy);
+        ctx.stroke();
+      }
+
+      const activeHover = hoveredNodeRef.current;
+      const activeSearch = searchQueryRef.current.trim().toLowerCase();
+      const activeLang = selectedLanguageRef.current;
+      const activeSelectedPath = selectedFilePathRef.current;
+
+      // Identify connected nodes for hover illumination
+      const connectedIds = new Set<string>();
+      if (activeHover) {
+        connectedIds.add(activeHover.id);
+        simLinks.forEach((link: any) => {
+          const sId = link.source?.id || link.source;
+          const tId = link.target?.id || link.target;
+          if (sId === activeHover.id) connectedIds.add(tId);
+          if (tId === activeHover.id) connectedIds.add(sId);
+        });
+      }
+
+      // Draw Links (Constellation lines)
+      simLinks.forEach((link: any) => {
+        if (!link.source || !link.target) return;
+        const s = typeof link.source === "object" ? link.source : nodeMap.get(link.source);
+        const t = typeof link.target === "object" ? link.target : nodeMap.get(link.target);
+        if (!s || !t) return;
+
+        // Language filter check
+        if (activeLang !== "ALL") {
+          if (s.type === "file" && s.language && s.language !== activeLang) return;
+          if (t.type === "file" && t.language && t.language !== activeLang) return;
+        }
+
+        const isHighlighted =
+          activeHover && (s.id === activeHover.id || t.id === activeHover.id);
+
+        let strokeColor = "rgba(148, 163, 184, 0.14)";
+        let strokeW = 1 / k;
+
+        if (isHighlighted) {
+          strokeColor = "#818cf8";
+          strokeW = 2.2 / k;
+        } else if (activeHover) {
+          strokeColor = "rgba(148, 163, 184, 0.03)";
+        } else if (link.type === "contains") {
+          strokeColor = "rgba(99, 102, 241, 0.18)";
+          strokeW = 1 / k;
+        } else if (link.type === "has_symbol") {
+          strokeColor = "rgba(56, 189, 248, 0.15)";
+          strokeW = 0.8 / k;
+        } else if (link.type === "imports") {
+          strokeColor = "rgba(129, 140, 248, 0.35)";
+          strokeW = 1.2 / k;
+        }
+
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeW;
+        if (link.type === "contains" && !isHighlighted) {
+          ctx.setLineDash([3 / k, 3 / k]);
+        } else {
+          ctx.setLineDash([]);
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(t.x, t.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
       });
-    });
 
-    // Node Unhover (Mouseout) - Restore Visual State Cleanly
-    cy.on("mouseout", "node", () => {
-      setHoveredNode(null);
-      syncVisualState();
-    });
+      // Draw Nodes (Physical Bubbles & Stars)
+      simNodes.forEach((node: any) => {
+        // Language filter
+        if (activeLang !== "ALL" && node.type === "file" && node.language && node.language !== activeLang) {
+          return;
+        }
 
-    // Drag-end saves node position
-    cy.on("dragfree", "node", (evt) => {
-      const node = evt.target as NodeSingular;
-      positionsRef.current.set(node.id(), { ...node.position() });
-    });
+        const isHovered = activeHover?.id === node.id;
+        const isConnected = activeHover ? connectedIds.has(node.id) : true;
+        const isSelected =
+          activeSelectedPath &&
+          (node.path === activeSelectedPath || node.id === `file:${activeSelectedPath}`);
+        const isSearchMatch =
+          Boolean(activeSearch) &&
+          (node.name.toLowerCase().includes(activeSearch) ||
+            (node.path && node.path.toLowerCase().includes(activeSearch)));
 
-    // Tap background clears selection
-    cy.on("tap", (evt) => {
-      if (evt.target === cy) {
-        setHoveredNode(null);
-        syncVisualState();
-      }
-    });
+        const opacity = activeHover
+          ? isConnected
+            ? 1
+            : 0.12
+          : activeSearch
+          ? isSearchMatch
+            ? 1
+            : 0.18
+          : 1;
 
-    // Resize observer
-    const observer = new ResizeObserver(() => {
-      cy.resize();
-    });
-    observer.observe(containerRef.current);
+        ctx.globalAlpha = opacity;
+
+        const baseRadius = node.size || (node.type === "directory" ? 22 : node.type === "file" ? 11 : 6);
+        const radius = baseRadius * (isHovered ? 1.25 : 1);
+
+        // A. Directory Hubs (Prominent Orbital Rings & Indigo Cores)
+        if (node.type === "directory") {
+          // Outer subtle dashed orbital aura
+          ctx.strokeStyle = isHovered
+            ? "rgba(129, 140, 248, 0.9)"
+            : "rgba(99, 102, 241, 0.35)";
+          ctx.lineWidth = (isHovered ? 2 : 1.2) / k;
+          ctx.setLineDash([4 / k, 4 / k]);
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius + 7 / k, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Core bubble
+          ctx.fillStyle = isHovered ? "#6366f1" : "#4f46e5";
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = isHovered ? "#ffffff" : "rgba(255, 255, 255, 0.4)";
+          ctx.lineWidth = (isHovered ? 2.5 : 1.2) / k;
+          ctx.stroke();
+        }
+        // B. File Bubbles & Symbol Dots
+        else {
+          ctx.fillStyle = isSearchMatch
+            ? "#fbbf24"
+            : isHovered
+            ? "#ffffff"
+            : node.color || "#818cf8";
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = isHovered || isSelected
+            ? "#38bdf8"
+            : isSearchMatch
+            ? "#f59e0b"
+            : "rgba(255, 255, 255, 0.3)";
+          ctx.lineWidth = (isHovered || isSelected ? 2.5 : 0.8) / k;
+          ctx.stroke();
+        }
+
+        // C. Clean, Non-Clumsy Level of Detail (LOD) Labels
+        // Solves the overlapping text issue:
+        // - Directories always show clean names.
+        // - When zoomed out, files do NOT show labels to prevent clumsy clutter.
+        // - On Hover / Selection / Search, labels reveal with a crisp dark pill backing!
+        // - When zoomed in (k > 1.25), file labels fade in cleanly.
+        const showLabel =
+          node.type === "directory" ||
+          isHovered ||
+          isSelected ||
+          isSearchMatch ||
+          (k > 1.25 && node.type === "file");
+
+        if (showLabel) {
+          const fontSize = node.type === "directory" ? 11 : 10;
+          ctx.font = `${node.type === "directory" ? "600 " : ""}${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+
+          // Truncate non-hovered labels to prevent horizontal crowding
+          let displayName = node.name;
+          if (!isHovered && !isSelected && node.type === "file" && displayName.length > 18) {
+            displayName = displayName.slice(0, 16) + "…";
+          }
+
+          const textMetrics = ctx.measureText(displayName);
+          const textW = textMetrics.width;
+          const textH = fontSize;
+          const pillPadX = 5 / k;
+          const pillPadY = 2 / k;
+          const pillX = node.x - textW / 2 - pillPadX;
+          const pillY = node.y + radius + 4 / k;
+
+          // Crisp rounded dark pill backing behind text to eliminate collision mess
+          ctx.fillStyle = "rgba(9, 13, 22, 0.88)";
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(pillX, pillY, textW + pillPadX * 2, textH + pillPadY * 2 + 2 / k, 3 / k);
+          } else {
+            ctx.rect(pillX, pillY, textW + pillPadX * 2, textH + pillPadY * 2 + 2 / k);
+          }
+          ctx.fill();
+
+          ctx.strokeStyle = isHovered || isSelected
+            ? "rgba(56, 189, 248, 0.6)"
+            : isSearchMatch
+            ? "rgba(251, 191, 36, 0.6)"
+            : "rgba(255, 255, 255, 0.08)";
+          ctx.lineWidth = 1 / k;
+          ctx.stroke();
+
+          // Label text
+          ctx.fillStyle = isHovered || isSelected
+            ? "#ffffff"
+            : isSearchMatch
+            ? "#fbbf24"
+            : "rgba(226, 232, 240, 0.9)";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText(displayName, node.x, pillY + pillPadY + 1 / k);
+        }
+
+        ctx.globalAlpha = 1;
+      });
+
+      ctx.restore();
+
+      animFrameIdRef.current = requestAnimationFrame(render);
+    };
+
+    animFrameIdRef.current = requestAnimationFrame(render);
+
+    // Responsive Canvas Resize
+    const handleResize = () => {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+    };
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      observer.disconnect();
-      cy.destroy();
-      cyRef.current = null;
+      if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
+      simulation.stop();
+      window.removeEventListener("resize", handleResize);
     };
-  }, [data, syncVisualState]);
+  }, [data, flyTo]);
 
-  // Re-run sync when visual filters change
-  useEffect(() => {
-    syncVisualState();
-  }, [syncVisualState]);
+  // Pointer Interaction Handlers (Hover, Drag, Pan, Zoom)
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const worldPos = screenToWorld(e.clientX, e.clientY);
 
-  // Animate to selected node if selectedFilePath changes externally
-  useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy || !selectedFilePath) return;
-
-    const target = cy.nodes().filter((n) => {
-      const p = n.data("path");
-      const id = n.data("id");
-      return p === selectedFilePath || id === `file:${selectedFilePath}`;
-    });
-
-    if (target.length > 0) {
-      cy.animate({
-        center: { eles: target },
-        zoom: Math.max(cy.zoom(), 1.15),
-        duration: 350,
-      });
+    // Check if clicking a bubble to drag
+    let clickedNode: any = null;
+    for (const node of nodesRef.current) {
+      const dist = Math.hypot(node.x - worldPos.x, node.y - worldPos.y);
+      if (dist <= (node.size || 12) + 6) {
+        clickedNode = node;
+        break;
+      }
     }
-  }, [selectedFilePath]);
 
-  // Handle Search Enter key to jump to first match
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      const cy = cyRef.current;
-      if (!cy) return;
-      const matches = cy.nodes(".search-match");
-      if (matches.length > 0) {
-        cy.animate({
-          center: { eles: matches.first() },
-          zoom: 1.35,
-          duration: 350,
-        });
-        const rawNode = matches.first().data("rawNode");
-        if (rawNode) {
-          onSelectNode(rawNode);
-        }
+    if (clickedNode) {
+      draggedNodeRef.current = clickedNode;
+      clickedNode.fx = clickedNode.x;
+      clickedNode.fy = clickedNode.y;
+      // Awaken the physics with elastic spring momentum!
+      simulationRef.current?.alphaTarget(0.25).restart();
+    } else {
+      isDraggingCanvasRef.current = true;
+      dragStartRef.current = { x: e.clientX, y: e.clientY };
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // 1. Dragging a physical bubble
+    if (draggedNodeRef.current) {
+      const worldPos = screenToWorld(e.clientX, e.clientY);
+      draggedNodeRef.current.fx = worldPos.x;
+      draggedNodeRef.current.fy = worldPos.y;
+      return;
+    }
+
+    // 2. Panning the camera canvas
+    if (isDraggingCanvasRef.current) {
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      transformRef.current.x += dx;
+      transformRef.current.y += dy;
+      dragStartRef.current = { x: e.clientX, y: e.clientY };
+      return;
+    }
+
+    // 3. Hover detection (fast radius check without restarting physics!)
+    const worldPos = screenToWorld(e.clientX, e.clientY);
+    let found: ObsidianNode | null = null;
+    for (const node of nodesRef.current) {
+      const dist = Math.hypot(node.x - worldPos.x, node.y - worldPos.y);
+      if (dist <= (node.size || 12) + 6) {
+        found = node;
+        break;
+      }
+    }
+
+    hoveredNodeRef.current = found;
+    setHoveredNode(found);
+  };
+
+  const handleMouseUp = () => {
+    if (draggedNodeRef.current) {
+      draggedNodeRef.current.fx = null;
+      draggedNodeRef.current.fy = null;
+      draggedNodeRef.current = null;
+      // Allow the bubble to gently oscillate and settle into place
+      simulationRef.current?.alphaTarget(0.003);
+    }
+    isDraggingCanvasRef.current = false;
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const worldPos = screenToWorld(e.clientX, e.clientY);
+    for (const node of nodesRef.current) {
+      const dist = Math.hypot(node.x - worldPos.x, node.y - worldPos.y);
+      if (dist <= (node.size || 12) + 6) {
+        handlersRef.current.onSelectNode(node);
+        break;
       }
     }
   };
 
-  // Zoom controls
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 1.09 : 0.91;
+    const currentK = transformRef.current.k;
+    const newK = Math.min(3.5, Math.max(0.12, currentK * zoomFactor));
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    transformRef.current.x = mouseX - (mouseX - transformRef.current.x) * (newK / currentK);
+    transformRef.current.y = mouseY - (mouseY - transformRef.current.y) * (newK / currentK);
+    transformRef.current.k = newK;
+
+    setZoomPercent(Math.round(newK * 100));
+  };
+
+  // Search Enter key flies directly to match
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const match = nodesRef.current.find(
+        (n) => n.name.toLowerCase().includes(q) || (n.path && n.path.toLowerCase().includes(q))
+      );
+      if (match) {
+        flyTo(match.x, match.y, 1.4);
+        handlersRef.current.onSelectNode(match);
+      }
+    }
+  };
+
+  // Zoom control buttons
   const handleZoomIn = () => {
-    const cy = cyRef.current;
-    if (!cy) return;
-    cy.animate({
-      zoom: Math.min(3.5, cy.zoom() * 1.3),
-      duration: 200,
-    });
+    const container = containerRef.current;
+    if (!container) return;
+    const centerX = container.clientWidth / 2;
+    const centerY = container.clientHeight / 2;
+    const currentK = transformRef.current.k;
+    const newK = Math.min(3.5, currentK * 1.25);
+
+    transformRef.current.x = centerX - (centerX - transformRef.current.x) * (newK / currentK);
+    transformRef.current.y = centerY - (centerY - transformRef.current.y) * (newK / currentK);
+    transformRef.current.k = newK;
+    setZoomPercent(Math.round(newK * 100));
   };
 
   const handleZoomOut = () => {
-    const cy = cyRef.current;
-    if (!cy) return;
-    cy.animate({
-      zoom: Math.max(0.12, cy.zoom() / 1.3),
-      duration: 200,
-    });
-  };
+    const container = containerRef.current;
+    if (!container) return;
+    const centerX = container.clientWidth / 2;
+    const centerY = container.clientHeight / 2;
+    const currentK = transformRef.current.k;
+    const newK = Math.max(0.12, currentK / 1.25);
 
-  const handleFit = () => {
-    const cy = cyRef.current;
-    if (!cy) return;
-    cy.animate({
-      fit: { eles: cy.elements(), padding: 45 },
-      duration: 350,
-    });
+    transformRef.current.x = centerX - (centerX - transformRef.current.x) * (newK / currentK);
+    transformRef.current.y = centerY - (centerY - transformRef.current.y) * (newK / currentK);
+    transformRef.current.k = newK;
+    setZoomPercent(Math.round(newK * 100));
   };
 
   const handleResetZoom = () => {
-    const cy = cyRef.current;
-    if (!cy) return;
-    cy.animate({
-      fit: { eles: cy.elements(), padding: 45 },
-      duration: 350,
-    });
+    const container = containerRef.current;
+    if (!container) return;
+    flyTo(0, 0, 0.85);
   };
 
   return (
-    <div className="relative w-full h-full bg-[#090d16] overflow-hidden select-none">
-      {/* Background Subtle Cosmic Starfield Texture */}
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/20 via-[#090d16]/60 to-[#040711]" />
+    <div
+      ref={containerRef}
+      className="relative w-full h-full bg-[#090d16] overflow-hidden select-none"
+    >
+      {/* Background Subtle Radial Gradient Starfield Glow */}
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/25 via-[#090d16]/70 to-[#040711]" />
 
-      {/* Subtle Coordinate Grid Lines */}
-      <div 
-        className="absolute inset-0 pointer-events-none opacity-20"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px)
-          `,
-          backgroundSize: "80px 80px",
-        }}
+      {/* Physics Canvas */}
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onClick={handleClick}
+        onWheel={handleWheel}
+        className="w-full h-full cursor-grab active:cursor-grabbing relative z-10"
       />
 
-      {/* Cytoscape Canvas Container */}
-      <div ref={containerRef} className="w-full h-full relative z-10" />
-
-      {/* Floating Top Controls & Search Bar */}
+      {/* Top Floating Controls & Search Bar */}
       <div className="absolute top-3.5 left-4 z-20 flex flex-wrap items-center gap-2 max-w-[calc(100%-2rem)]">
-        {/* Search Input */}
+        {/* Search Bar */}
         <div className="relative">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
@@ -695,14 +740,6 @@ export default function ObsidianConstellationGraph({
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
           <div className="h-3 w-[1px] bg-slate-800 mx-0.5" />
-          <button
-            onClick={handleFit}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-            title="Fit to View"
-            aria-label="Fit graph to view"
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-          </button>
           <button
             onClick={handleResetZoom}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
