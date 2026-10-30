@@ -54,7 +54,7 @@ export default function Navbar({ currentRepo, onSelectRepo, onOpenConnectModal }
 
         {/* Repository Switcher */}
         {currentRepo && (
-          <div className="relative">
+          <div className="relative hidden sm:block">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center space-x-2.5 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-white/10 hover:border-white/20 text-sm font-medium text-slate-200 transition-all hover:bg-slate-800/80"

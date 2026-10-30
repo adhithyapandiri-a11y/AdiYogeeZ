@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Copy, Check, FileCode, ExternalLink, Code } from "lucide-react";
 import { getFileContent } from "@/lib/api";
 import { FileContentResponse } from "@/lib/types";
@@ -18,25 +18,47 @@ export default function CodeViewerModal({
   filePath,
   targetLineStart,
   targetLineEnd,
-  onClose
+  onClose,
 }: CodeViewerModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!filePath) return;
+    const previous = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    return () => previous?.focus();
+  }, [filePath]);
   const [data, setData] = useState<FileContentResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     if (!filePath) return;
+    let current = true;
     setLoading(true);
+    setData(null);
+    setError("");
     getFileContent(repoId, filePath)
       .then((res) => {
-        setData(res);
-        setLoading(false);
+        if (current) {
+          setData(res);
+          setLoading(false);
+        }
       })
       .catch((err) => {
-        console.error("Failed to load file:", err);
-        setLoading(false);
+        if (current) {
+          setError(
+            err instanceof Error ? err.message : "Could not load source.",
+          );
+          setLoading(false);
+        }
       });
-  }, [repoId, filePath]);
+    return () => {
+      current = false;
+    };
+  }, [repoId, filePath, retry]);
 
   if (!filePath) return null;
 
@@ -50,8 +72,35 @@ export default function CodeViewerModal({
   const lines = data?.content ? data.content.split("\n") : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div 
+    <div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Source of ${filePath}`}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          onClose();
+        }
+        if (event.key === "Tab") {
+          const items = modalRef.current?.querySelectorAll<HTMLButtonElement>(
+            "button:not(:disabled)",
+          );
+          if (!items?.length) return;
+          const first = items[0],
+            last = items[items.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+    >
+      <div
         className="w-full max-w-5xl h-[85vh] bg-[#0c121e] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
@@ -66,12 +115,17 @@ export default function CodeViewerModal({
                 <span>{filePath}</span>
                 {targetLineStart && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 font-mono">
-                    L{targetLineStart}{targetLineEnd && targetLineEnd !== targetLineStart ? `-${targetLineEnd}` : ""}
+                    L{targetLineStart}
+                    {targetLineEnd && targetLineEnd !== targetLineStart
+                      ? `-${targetLineEnd}`
+                      : ""}
                   </span>
                 )}
               </div>
               <div className="text-[11px] text-slate-400">
-                {data ? `${data.language} • ${data.line_count} lines • ${data.symbols.length} detected symbols` : "Loading..."}
+                {data
+                  ? `${data.language} • ${data.line_count} lines • ${data.symbols.length} detected symbols`
+                  : "Loading..."}
               </div>
             </div>
           </div>
@@ -81,11 +135,17 @@ export default function CodeViewerModal({
               onClick={handleCopy}
               className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-white/5 transition-colors"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+              {copied ? (
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Copy className="w-3.5 h-3.5 text-slate-400" />
+              )}
               <span>{copied ? "Copied" : "Copy Code"}</span>
             </button>
             <button
               onClick={onClose}
+              aria-label="Close source viewer"
+              ref={closeRef}
               className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
             >
               <X className="w-5 h-5" />
@@ -95,7 +155,17 @@ export default function CodeViewerModal({
 
         {/* Code Content Body */}
         <div className="flex-1 overflow-auto bg-[#090d16] font-mono text-xs">
-          {loading ? (
+          {error ? (
+            <div role="alert" className="space-y-3 p-6 text-rose-300">
+              <p>{error}</p>
+              <button
+                className="rounded border border-slate-700 px-3 py-2 text-xs text-slate-200"
+                onClick={() => setRetry((n) => n + 1)}
+              >
+                Retry source
+              </button>
+            </div>
+          ) : loading ? (
             <div className="h-full flex items-center justify-center text-slate-400">
               <div className="flex items-center space-x-2">
                 <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
@@ -106,16 +176,17 @@ export default function CodeViewerModal({
             <div className="py-3">
               {lines.map((line, idx) => {
                 const lineNo = idx + 1;
-                const isTarget = targetLineStart && targetLineEnd 
-                  ? lineNo >= targetLineStart && lineNo <= targetLineEnd 
-                  : lineNo === targetLineStart;
+                const isTarget =
+                  targetLineStart && targetLineEnd
+                    ? lineNo >= targetLineStart && lineNo <= targetLineEnd
+                    : lineNo === targetLineStart;
 
                 return (
                   <div
                     key={idx}
                     className={`flex items-start px-4 py-0.5 transition-colors ${
-                      isTarget 
-                        ? "bg-indigo-600/20 border-l-2 border-indigo-400 text-indigo-100" 
+                      isTarget
+                        ? "bg-indigo-600/20 border-l-2 border-indigo-400 text-indigo-100"
                         : "hover:bg-slate-800/30 text-slate-300"
                     }`}
                   >
@@ -143,7 +214,10 @@ export default function CodeViewerModal({
                 key={i}
                 className="px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-white/5 whitespace-nowrap shrink-0"
               >
-                <span className="text-indigo-400 font-mono">{sym.symbol_type}:</span> {sym.name} (L{sym.start_line})
+                <span className="text-indigo-400 font-mono">
+                  {sym.symbol_type}:
+                </span>{" "}
+                {sym.name} (L{sym.start_line})
               </span>
             ))}
           </div>

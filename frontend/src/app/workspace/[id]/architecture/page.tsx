@@ -10,9 +10,11 @@ import {
   Boxes, 
   Cpu, 
   ArrowUpRight,
-  Sparkles
+  Sparkles,
+  Network
 } from "lucide-react";
 import ObsidianConstellationGraph from "@/components/architecture/ObsidianConstellationGraph";
+import { RepositoryMapView } from "@/components/architecture/RepositoryMapView";
 import { ProjectStructureView } from "@/components/architecture/ProjectStructureView";
 import { DependencyMapView } from "@/components/architecture/DependencyMapView";
 import { FeatureFlowView } from "@/components/architecture/FeatureFlowView";
@@ -25,8 +27,8 @@ function ArchitectureContent() {
   const params = useParams();
   const repoId = Number(params?.id);
 
-  // Default to the flagship Obsidian Cosmos Graph
-  const [viewMode, setViewMode] = useState<"obsidian" | "structure" | "dependency" | "flow">("obsidian");
+  // Default to the flagship Obsidian Cosmos Graph, with Repository Map also available
+  const [viewMode, setViewMode] = useState<"obsidian" | "map" | "structure" | "dependency" | "flow">("obsidian");
   const [repo, setRepo] = useState<Repository | null>(null);
   const [obsidianData, setObsidianData] = useState<ObsidianGraphData | null>(null);
   const [obsidianLoading, setObsidianLoading] = useState(true);
@@ -58,8 +60,8 @@ function ArchitectureContent() {
 
   return (
     <div className="relative w-full h-[calc(100vh-3.5rem)] bg-[#090d16] flex flex-col overflow-hidden">
-      {/* Top 4-Mode Switcher Bar */}
-      <div className="h-14 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-20">
+      {/* Top 5-Mode Switcher Bar */}
+      <div className="h-14 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 flex items-center justify-between gap-3 overflow-x-auto shrink-0 z-20">
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-1 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono">
             {/* 1. Obsidian Cosmos Graph (Flagship) */}
@@ -78,7 +80,24 @@ function ArchitectureContent() {
               <span>Obsidian Cosmos</span>
             </button>
 
-            {/* 2. Project Structure */}
+            {/* 2. Interactive Repository Map (PR #1) */}
+            <button
+              onClick={() => {
+                setViewMode("map");
+                setInspectedPath(null);
+              }}
+              className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 font-semibold transition-colors ${
+                viewMode === "map"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/25"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+              aria-pressed={viewMode === "map"}
+            >
+              <Network className="h-3.5 w-3.5 text-indigo-300" />
+              <span>Repository Map</span>
+            </button>
+
+            {/* 3. Hierarchy Tree */}
             <button
               onClick={() => {
                 setViewMode("structure");
@@ -91,10 +110,10 @@ function ArchitectureContent() {
               }`}
             >
               <FolderTree className="w-3.5 h-3.5 text-indigo-300" />
-              <span>Project Structure</span>
+              <span>Hierarchy</span>
             </button>
 
-            {/* 3. Dependency Map */}
+            {/* 4. Dependency Map */}
             <button
               onClick={() => {
                 setViewMode("dependency");
@@ -110,7 +129,7 @@ function ArchitectureContent() {
               <span>Dependency Map</span>
             </button>
 
-            {/* 4. Feature Flow */}
+            {/* 5. Feature Flow */}
             <button
               onClick={() => {
                 setViewMode("flow");
@@ -134,21 +153,28 @@ function ArchitectureContent() {
             <div className="flex items-center gap-1.5">
               <Boxes className="w-3.5 h-3.5 text-indigo-400" />
               <span>
-                <strong className="text-slate-200">{repo.file_count}</strong> files
+                <strong className="text-slate-200">{repo.file_count}</strong>{" "}
+                files
               </span>
             </div>
             <span>•</span>
             <div className="flex items-center gap-1.5">
               <Cpu className="w-3.5 h-3.5 text-sky-400" />
               <span>
-                <strong className="text-slate-200">{repo.function_count}</strong> functions
+                <strong className="text-slate-200">
+                  {repo.function_count}
+                </strong>{" "}
+                functions
               </span>
             </div>
             <span>•</span>
             <div className="flex items-center gap-1.5">
               <ArrowUpRight className="w-3.5 h-3.5 text-violet-400" />
               <span>
-                <strong className="text-slate-200">{repo.dependency_count}</strong> dependencies
+                <strong className="text-slate-200">
+                  {repo.dependency_count}
+                </strong>{" "}
+                dependencies
               </span>
             </div>
           </div>
@@ -156,7 +182,8 @@ function ArchitectureContent() {
       </div>
 
       {/* Main Exploration View Area */}
-      <div className="flex-1 relative w-full h-full overflow-hidden">
+      {/* Main Exploration View Area */}
+      <div className="flex-1 relative min-w-0 w-full h-full overflow-hidden">
         {/* VIEW 1: Obsidian Cosmos Graph */}
         {viewMode === "obsidian" && (
           obsidianLoading ? (
@@ -179,7 +206,15 @@ function ArchitectureContent() {
           )
         )}
 
-        {/* VIEW 2: Project Structure Tree */}
+        {/* VIEW 2: Interactive Repository Map */}
+        {viewMode === "map" && (
+          <RepositoryMapView
+            repoId={repoId}
+            repository={repo}
+            selectedFilePath={inspectedPath}
+            onSelectFile={setInspectedPath}
+          />
+        )}
         {viewMode === "structure" && (
           <ProjectStructureView
             repoId={repoId}
