@@ -19,7 +19,10 @@ function WorkspaceInner({ children }: { children: React.ReactNode }) {
 
   // Global Code Viewer Modal State
   const [codeViewerFile, setCodeViewerFile] = useState<string | null>(null);
-  const [codeViewerLines, setCodeViewerLines] = useState<{ start?: number; end?: number }>({});
+  const [codeViewerLines, setCodeViewerLines] = useState<{
+    start?: number;
+    end?: number;
+  }>({});
 
   useEffect(() => {
     if (!repoId || isNaN(repoId)) return;
@@ -29,7 +32,7 @@ function WorkspaceInner({ children }: { children: React.ReactNode }) {
   }, [repoId]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#090d16] text-slate-100">
+    <div className="min-h-screen flex flex-col bg-[#101010] text-[#E8E4D3]">
       {/* Navbar */}
       <Navbar
         currentRepo={repo}
@@ -65,12 +68,18 @@ function WorkspaceInner({ children }: { children: React.ReactNode }) {
 }
 
 export default function WorkspaceLayout({
-  children
+  children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#090d16] flex items-center justify-center text-xs text-slate-500">Loading RepoMind Workspace...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#101010] flex items-center justify-center text-xs text-[#E8E4D3]">
+          Loading RepoMind Workspace...
+        </div>
+      }
+    >
       <WorkspaceInner>{children}</WorkspaceInner>
     </Suspense>
   );

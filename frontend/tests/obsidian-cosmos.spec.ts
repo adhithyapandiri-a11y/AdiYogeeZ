@@ -149,13 +149,13 @@ test("Obsidian Cosmos renders smoothly with Cytoscape and handles search and sel
   await page.goto("/workspace/1/architecture");
 
   // Switch to Obsidian Cosmos tab
-  const cosmosTab = page.getByRole("button", { name: "Obsidian Cosmos" });
+  const cosmosTab = page.getByRole("button", { name: /Obsidian Cosmos/ });
   await expect(cosmosTab).toBeVisible();
   await cosmosTab.click();
 
   // Cytoscape canvas container should be visible and rendered
-  await expect(page.getByText("Obsidian Cosmos Network")).toBeVisible();
-  const searchInput = page.getByPlaceholder("Search constellation (Press Enter to jump)...");
+  await expect(page.getByText("3D Obsidian Cosmos", { exact: true })).toBeVisible();
+  const searchInput = page.getByPlaceholder("Search 3D constellation (Enter to fly)...");
   await expect(searchInput).toBeVisible();
 
   // Type search query
@@ -163,8 +163,8 @@ test("Obsidian Cosmos renders smoothly with Cytoscape and handles search and sel
   await searchInput.press("Enter");
 
   // Zoom controls
-  await page.getByRole("button", { name: "Zoom in" }).click();
-  await page.getByRole("button", { name: "Reset zoom" }).click();
+  await page.getByTitle("Zoom into 3D cosmos").click();
+  await page.getByTitle("Reset 3D camera").click();
 
   // Take screenshot for visual record
   await page.screenshot({ path: "test-results/obsidian-cosmos-fixed.png" });
