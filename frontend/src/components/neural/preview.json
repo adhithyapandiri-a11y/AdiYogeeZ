@@ -1,0 +1,1142 @@
+{
+  "nodes": [
+    {
+      "id": "dir:backend",
+      "name": "backend",
+      "path": "backend",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:backend/app",
+      "name": "app",
+      "path": "backend/app",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:backend/app/api",
+      "name": "api",
+      "path": "backend/app/api",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:backend/app/models",
+      "name": "models",
+      "path": "backend/app/models",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:backend/app/services",
+      "name": "services",
+      "path": "backend/app/services",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend",
+      "name": "frontend",
+      "path": "frontend",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src",
+      "name": "src",
+      "path": "frontend/src",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/app",
+      "name": "app",
+      "path": "frontend/src/app",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/app/workspace",
+      "name": "workspace",
+      "path": "frontend/src/app/workspace",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/app/workspace/[id]",
+      "name": "[id]",
+      "path": "frontend/src/app/workspace/[id]",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/app/workspace/[id]/architecture",
+      "name": "architecture",
+      "path": "frontend/src/app/workspace/[id]/architecture",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/app/workspace/[id]/chat",
+      "name": "chat",
+      "path": "frontend/src/app/workspace/[id]/chat",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/app/workspace/[id]/contribution",
+      "name": "contribution",
+      "path": "frontend/src/app/workspace/[id]/contribution",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/app/workspace/[id]/execution-path",
+      "name": "execution-path",
+      "path": "frontend/src/app/workspace/[id]/execution-path",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/app/workspace/[id]/impact",
+      "name": "impact",
+      "path": "frontend/src/app/workspace/[id]/impact",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/app/workspace/[id]/settings",
+      "name": "settings",
+      "path": "frontend/src/app/workspace/[id]/settings",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/app/workspace/[id]/time-machine",
+      "name": "time-machine",
+      "path": "frontend/src/app/workspace/[id]/time-machine",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components",
+      "name": "components",
+      "path": "frontend/src/components",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components/architecture",
+      "name": "architecture",
+      "path": "frontend/src/components/architecture",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components/architecture/nodes",
+      "name": "nodes",
+      "path": "frontend/src/components/architecture/nodes",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components/chat",
+      "name": "chat",
+      "path": "frontend/src/components/chat",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components/common",
+      "name": "common",
+      "path": "frontend/src/components/common",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components/contribution",
+      "name": "contribution",
+      "path": "frontend/src/components/contribution",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components/dashboard",
+      "name": "dashboard",
+      "path": "frontend/src/components/dashboard",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components/execution-path",
+      "name": "execution-path",
+      "path": "frontend/src/components/execution-path",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components/impact",
+      "name": "impact",
+      "path": "frontend/src/components/impact",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components/layout",
+      "name": "layout",
+      "path": "frontend/src/components/layout",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components/settings",
+      "name": "settings",
+      "path": "frontend/src/components/settings",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/components/time-machine",
+      "name": "time-machine",
+      "path": "frontend/src/components/time-machine",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "dir:frontend/src/lib",
+      "name": "lib",
+      "path": "frontend/src/lib",
+      "type": "directory",
+      "size": 16,
+      "color": "#E8E4D3"
+    },
+    {
+      "id": "file:backend/app/api/routes_architecture.py",
+      "name": "routes_architecture.py",
+      "path": "backend/app/api/routes_architecture.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/api/routes_chat.py",
+      "name": "routes_chat.py",
+      "path": "backend/app/api/routes_chat.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/api/routes_contribution.py",
+      "name": "routes_contribution.py",
+      "path": "backend/app/api/routes_contribution.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/api/routes_execution_path.py",
+      "name": "routes_execution_path.py",
+      "path": "backend/app/api/routes_execution_path.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/api/routes_impact.py",
+      "name": "routes_impact.py",
+      "path": "backend/app/api/routes_impact.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/api/routes_repo.py",
+      "name": "routes_repo.py",
+      "path": "backend/app/api/routes_repo.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/api/routes_time_machine.py",
+      "name": "routes_time_machine.py",
+      "path": "backend/app/api/routes_time_machine.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/config.py",
+      "name": "config.py",
+      "path": "backend/app/config.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/database.py",
+      "name": "database.py",
+      "path": "backend/app/database.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/main.py",
+      "name": "main.py",
+      "path": "backend/app/main.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/models/schema.py",
+      "name": "schema.py",
+      "path": "backend/app/models/schema.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/services/github_service.py",
+      "name": "github_service.py",
+      "path": "backend/app/services/github_service.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/services/graph_service.py",
+      "name": "graph_service.py",
+      "path": "backend/app/services/graph_service.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/services/impact_service.py",
+      "name": "impact_service.py",
+      "path": "backend/app/services/impact_service.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/services/indexer_service.py",
+      "name": "indexer_service.py",
+      "path": "backend/app/services/indexer_service.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/services/llm_service.py",
+      "name": "llm_service.py",
+      "path": "backend/app/services/llm_service.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/services/parser_service.py",
+      "name": "parser_service.py",
+      "path": "backend/app/services/parser_service.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:backend/app/services/rag_service.py",
+      "name": "rag_service.py",
+      "path": "backend/app/services/rag_service.py",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/app/layout.tsx",
+      "name": "layout.tsx",
+      "path": "frontend/src/app/layout.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/app/page.tsx",
+      "name": "page.tsx",
+      "path": "frontend/src/app/page.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/app/workspace/[id]/architecture/page.tsx",
+      "name": "page.tsx",
+      "path": "frontend/src/app/workspace/[id]/architecture/page.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/app/workspace/[id]/chat/page.tsx",
+      "name": "page.tsx",
+      "path": "frontend/src/app/workspace/[id]/chat/page.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/app/workspace/[id]/contribution/page.tsx",
+      "name": "page.tsx",
+      "path": "frontend/src/app/workspace/[id]/contribution/page.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/app/workspace/[id]/execution-path/page.tsx",
+      "name": "page.tsx",
+      "path": "frontend/src/app/workspace/[id]/execution-path/page.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/app/workspace/[id]/impact/page.tsx",
+      "name": "page.tsx",
+      "path": "frontend/src/app/workspace/[id]/impact/page.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/app/workspace/[id]/layout.tsx",
+      "name": "layout.tsx",
+      "path": "frontend/src/app/workspace/[id]/layout.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/app/workspace/[id]/page.tsx",
+      "name": "page.tsx",
+      "path": "frontend/src/app/workspace/[id]/page.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/app/workspace/[id]/settings/page.tsx",
+      "name": "page.tsx",
+      "path": "frontend/src/app/workspace/[id]/settings/page.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/app/workspace/[id]/time-machine/page.tsx",
+      "name": "page.tsx",
+      "path": "frontend/src/app/workspace/[id]/time-machine/page.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/ArchitectureFlow.tsx",
+      "name": "ArchitectureFlow.tsx",
+      "path": "frontend/src/components/architecture/ArchitectureFlow.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/DependencyMapView.tsx",
+      "name": "DependencyMapView.tsx",
+      "path": "frontend/src/components/architecture/DependencyMapView.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/EdgeDetailsModal.tsx",
+      "name": "EdgeDetailsModal.tsx",
+      "path": "frontend/src/components/architecture/EdgeDetailsModal.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/FeatureFlowView.tsx",
+      "name": "FeatureFlowView.tsx",
+      "path": "frontend/src/components/architecture/FeatureFlowView.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/NodeDetailsDrawer.tsx",
+      "name": "NodeDetailsDrawer.tsx",
+      "path": "frontend/src/components/architecture/NodeDetailsDrawer.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/ObsidianConstellationGraph.tsx",
+      "name": "ObsidianConstellationGraph.tsx",
+      "path": "frontend/src/components/architecture/ObsidianConstellationGraph.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/ProjectStructureView.tsx",
+      "name": "ProjectStructureView.tsx",
+      "path": "frontend/src/components/architecture/ProjectStructureView.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/nodes/DirectoryNode.tsx",
+      "name": "DirectoryNode.tsx",
+      "path": "frontend/src/components/architecture/nodes/DirectoryNode.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/nodes/FeatureStageNode.tsx",
+      "name": "FeatureStageNode.tsx",
+      "path": "frontend/src/components/architecture/nodes/FeatureStageNode.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/nodes/FileNode.tsx",
+      "name": "FileNode.tsx",
+      "path": "frontend/src/components/architecture/nodes/FileNode.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/nodes/ModuleNode.tsx",
+      "name": "ModuleNode.tsx",
+      "path": "frontend/src/components/architecture/nodes/ModuleNode.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/architecture/nodes/SemanticEdge.tsx",
+      "name": "SemanticEdge.tsx",
+      "path": "frontend/src/components/architecture/nodes/SemanticEdge.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/chat/ChatInterface.tsx",
+      "name": "ChatInterface.tsx",
+      "path": "frontend/src/components/chat/ChatInterface.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/common/CodeViewerModal.tsx",
+      "name": "CodeViewerModal.tsx",
+      "path": "frontend/src/components/common/CodeViewerModal.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/common/ConnectRepoModal.tsx",
+      "name": "ConnectRepoModal.tsx",
+      "path": "frontend/src/components/common/ConnectRepoModal.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/contribution/ContributionAssistantView.tsx",
+      "name": "ContributionAssistantView.tsx",
+      "path": "frontend/src/components/contribution/ContributionAssistantView.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/dashboard/DashboardOverview.tsx",
+      "name": "DashboardOverview.tsx",
+      "path": "frontend/src/components/dashboard/DashboardOverview.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/execution-path/ExecutionPathVisualizer.tsx",
+      "name": "ExecutionPathVisualizer.tsx",
+      "path": "frontend/src/components/execution-path/ExecutionPathVisualizer.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/impact/ImpactAnalyzerView.tsx",
+      "name": "ImpactAnalyzerView.tsx",
+      "path": "frontend/src/components/impact/ImpactAnalyzerView.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/layout/Navbar.tsx",
+      "name": "Navbar.tsx",
+      "path": "frontend/src/components/layout/Navbar.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/layout/Sidebar.tsx",
+      "name": "Sidebar.tsx",
+      "path": "frontend/src/components/layout/Sidebar.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/settings/SettingsView.tsx",
+      "name": "SettingsView.tsx",
+      "path": "frontend/src/components/settings/SettingsView.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/components/time-machine/TimeMachineView.tsx",
+      "name": "TimeMachineView.tsx",
+      "path": "frontend/src/components/time-machine/TimeMachineView.tsx",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/lib/api.ts",
+      "name": "api.ts",
+      "path": "frontend/src/lib/api.ts",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/lib/dagre-layout.ts",
+      "name": "dagre-layout.ts",
+      "path": "frontend/src/lib/dagre-layout.ts",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    },
+    {
+      "id": "file:frontend/src/lib/types.ts",
+      "name": "types.ts",
+      "path": "frontend/src/lib/types.ts",
+      "type": "file",
+      "size": 8,
+      "color": "#BDB8A8"
+    }
+  ],
+  "links": [
+    {
+      "source": "file:frontend/src/app/page.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/page.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/architecture/page.tsx",
+      "target": "file:frontend/src/components/architecture/ProjectStructureView.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/architecture/page.tsx",
+      "target": "file:frontend/src/components/architecture/DependencyMapView.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/architecture/page.tsx",
+      "target": "file:frontend/src/components/architecture/FeatureFlowView.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/architecture/page.tsx",
+      "target": "file:frontend/src/components/architecture/NodeDetailsDrawer.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/architecture/page.tsx",
+      "target": "file:frontend/src/components/common/CodeViewerModal.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/architecture/page.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/architecture/page.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/chat/page.tsx",
+      "target": "file:frontend/src/components/chat/ChatInterface.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/chat/page.tsx",
+      "target": "file:frontend/src/components/common/CodeViewerModal.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/chat/page.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/chat/page.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/contribution/page.tsx",
+      "target": "file:frontend/src/components/contribution/ContributionAssistantView.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/contribution/page.tsx",
+      "target": "file:frontend/src/components/common/CodeViewerModal.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/execution-path/page.tsx",
+      "target": "file:frontend/src/components/execution-path/ExecutionPathVisualizer.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/execution-path/page.tsx",
+      "target": "file:frontend/src/components/common/CodeViewerModal.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/impact/page.tsx",
+      "target": "file:frontend/src/components/impact/ImpactAnalyzerView.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/impact/page.tsx",
+      "target": "file:frontend/src/components/common/CodeViewerModal.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/layout.tsx",
+      "target": "file:frontend/src/components/layout/Navbar.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/layout.tsx",
+      "target": "file:frontend/src/components/layout/Sidebar.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/layout.tsx",
+      "target": "file:frontend/src/components/common/CodeViewerModal.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/layout.tsx",
+      "target": "file:frontend/src/components/common/ConnectRepoModal.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/layout.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/layout.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/page.tsx",
+      "target": "file:frontend/src/components/dashboard/DashboardOverview.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/page.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/page.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/settings/page.tsx",
+      "target": "file:frontend/src/components/settings/SettingsView.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/settings/page.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/settings/page.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/app/workspace/[id]/time-machine/page.tsx",
+      "target": "file:frontend/src/components/time-machine/TimeMachineView.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/DependencyMapView.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/DependencyMapView.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/DependencyMapView.tsx",
+      "target": "file:frontend/src/components/architecture/nodes/ModuleNode.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/DependencyMapView.tsx",
+      "target": "file:frontend/src/components/architecture/nodes/FileNode.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/DependencyMapView.tsx",
+      "target": "file:frontend/src/components/architecture/nodes/SemanticEdge.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/DependencyMapView.tsx",
+      "target": "file:frontend/src/lib/dagre-layout.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/DependencyMapView.tsx",
+      "target": "file:frontend/src/components/architecture/EdgeDetailsModal.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/EdgeDetailsModal.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/FeatureFlowView.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/FeatureFlowView.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/FeatureFlowView.tsx",
+      "target": "file:frontend/src/components/architecture/nodes/FeatureStageNode.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/NodeDetailsDrawer.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/NodeDetailsDrawer.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/ObsidianConstellationGraph.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/ProjectStructureView.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/ProjectStructureView.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/ProjectStructureView.tsx",
+      "target": "file:frontend/src/components/architecture/nodes/DirectoryNode.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/ProjectStructureView.tsx",
+      "target": "file:frontend/src/components/architecture/nodes/FileNode.tsx",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/ProjectStructureView.tsx",
+      "target": "file:frontend/src/lib/dagre-layout.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/nodes/DirectoryNode.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/nodes/FeatureStageNode.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/nodes/FileNode.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/architecture/nodes/ModuleNode.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/chat/ChatInterface.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/chat/ChatInterface.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/common/CodeViewerModal.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/common/CodeViewerModal.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/common/ConnectRepoModal.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/common/ConnectRepoModal.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/contribution/ContributionAssistantView.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/contribution/ContributionAssistantView.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/dashboard/DashboardOverview.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/execution-path/ExecutionPathVisualizer.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/execution-path/ExecutionPathVisualizer.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/impact/ImpactAnalyzerView.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/impact/ImpactAnalyzerView.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/layout/Navbar.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/layout/Navbar.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/layout/Sidebar.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/settings/SettingsView.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/time-machine/TimeMachineView.tsx",
+      "target": "file:frontend/src/lib/api.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/components/time-machine/TimeMachineView.tsx",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    },
+    {
+      "source": "file:frontend/src/lib/api.ts",
+      "target": "file:frontend/src/lib/types.ts",
+      "type": "imports",
+      "value": 1
+    }
+  ],
+  "stats": {
+    "total_nodes": 85,
+    "total_links": 75,
+    "total_directories": 30,
+    "total_files": 55
+  }
+}

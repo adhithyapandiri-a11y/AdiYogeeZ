@@ -115,6 +115,7 @@ const dependencyData = {
       data: {
         name: "lib",
         file_count: 2,
+        total_lines: 200,
         languages: ["JavaScript"],
         architectural_role: "Core Library",
         incoming_count: 0,
@@ -229,7 +230,7 @@ const obsidianData = {
 };
 
 async function mockApis(page: any) {
-  await page.route("**/api/repositories/1", async (route: any) => {
+  await page.route("**/api/repos/1", async (route: any) => {
     await route.fulfill({ json: repo });
   });
 
@@ -245,15 +246,17 @@ async function mockApis(page: any) {
     await route.fulfill({ json: featureFlowData });
   });
 
-  await page.route("**/api/architecture/1/obsidian", async (route: any) => {
+  await page.route("**/api/architecture/obsidian/1", async (route: any) => {
     await route.fulfill({ json: obsidianData });
   });
 }
 
 test.describe("Architecture 4-View Suite & GitDiagram Hierarchy", () => {
-  test("renders exactly 4 navigation views without Repository Map", async ({ page }) => {
+  test("keeps the four existing views alongside Neural Map", async ({ page }) => {
     await mockApis(page);
     await page.goto("/workspace/1/architecture");
+
+    await expect(page.getByRole("button", { name: "Neural Map", exact: true })).toBeVisible();
 
     // Check top navigation tabs
     await expect(page.getByRole("button", { name: "Obsidian Cosmos" })).toBeVisible();

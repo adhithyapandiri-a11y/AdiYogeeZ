@@ -9,7 +9,13 @@
 body {
   background-color: #090d16;
   color: #f1f5f9;
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    var(--font-geist-sans),
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   overflow-x: hidden;
 }
 
@@ -64,4 +70,830 @@ body {
 
 .glow-blue {
   box-shadow: 0 0 25px -5px rgba(56, 189, 248, 0.25);
+}
+
+/* Approved RepoMind palette: neutral charcoal and warm ivory. */
+:root {
+  --rm-bg: #101010;
+  --rm-panel: #191919;
+  --rm-border: #333333;
+  --rm-ink: #e8e4d3;
+  --rm-muted: #aaa79d;
+}
+.repomind-home,
+.neural-map {
+  color: var(--rm-ink);
+  background: var(--rm-bg);
+}
+.repomind-home *,
+.neural-map * {
+  box-sizing: border-box;
+}
+.repomind-home ::selection,
+.neural-map ::selection {
+  background: #e8e4d3;
+  color: #101010;
+}
+.repomind-home :focus-visible,
+.neural-map :focus-visible {
+  outline: 2px solid var(--rm-ink);
+  outline-offset: 4px;
+}
+.repomind-home button,
+.neural-map button,
+.neural-map select {
+  cursor: pointer;
+}
+.repomind-home a,
+.neural-map a {
+  text-decoration: none;
+}
+.repomind-home button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.repomind-home input,
+.neural-map input {
+  caret-color: var(--rm-ink);
+}
+.repomind-home input::placeholder,
+.neural-map input::placeholder {
+  color: var(--rm-muted);
+  opacity: 1;
+}
+.repomind-home {
+  min-height: 100vh;
+  font-family: var(--font-geist-sans), sans-serif;
+}
+.home-header {
+  height: 84px;
+  max-width: 1320px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  border-bottom: 1px solid var(--rm-border);
+  padding: 0 4px;
+}
+.home-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 23px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+.home-header nav {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  font-size: 13px;
+  color: var(--rm-muted);
+}
+.home-header nav a:hover,
+.home-footer a:hover {
+  color: var(--rm-ink);
+}
+.home-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  border: 1px solid #77756c;
+  border-radius: 7px;
+  padding: 11px 17px;
+  font-size: 12px;
+}
+.home-header > .home-outline {
+  margin-left: auto;
+}
+.home-outline:hover {
+  background: #242424;
+}
+.home-hero {
+  padding: 62px 24px 30px;
+  text-align: center;
+}
+.home-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.27em;
+  color: var(--rm-muted);
+  margin: 0 0 17px;
+}
+.home-hero h1 {
+  font-size: clamp(38px, 4.5vw, 66px);
+  line-height: 1.12;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  margin: 0;
+  text-wrap: balance;
+}
+.home-description {
+  max-width: 740px;
+  margin: 19px auto 27px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--rm-muted);
+}
+.home-repo-form {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  max-width: 780px;
+  margin: 0 auto;
+}
+.home-url {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+  padding: 0 17px;
+  border: 1px solid #575750;
+  border-radius: 7px;
+  height: 50px;
+  background: #151515;
+}
+.home-url:focus-within {
+  border-color: var(--rm-ink);
+}
+.home-url input {
+  width: 100%;
+  min-width: 0;
+  outline: none;
+  background: none;
+  font-size: 14px;
+  color: var(--rm-ink);
+}
+.home-primary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 17px;
+  background: var(--rm-ink);
+  color: #101010;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 23px;
+  min-height: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.18s;
+}
+.home-primary:hover {
+  background: #fff9e7;
+}
+.home-help {
+  color: var(--rm-muted);
+  font-size: 11px;
+  margin: 11px 0 0;
+}
+.home-error {
+  margin: 14px auto 0;
+  max-width: 760px;
+  font-size: 13px;
+  color: #f1b7a6;
+}
+.home-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  margin: 18px auto;
+  font-variant-numeric: tabular-nums;
+}
+.home-progress progress {
+  width: 150px;
+  height: 5px;
+  accent-color: var(--rm-ink);
+}
+.home-recent {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+  color: var(--rm-muted);
+  font-size: 11px;
+}
+.home-recent a {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--rm-ink);
+}
+.home-product {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.home-product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  min-height: 47px;
+  border: 1px solid var(--rm-border);
+  border-bottom: 0;
+  padding: 10px 17px;
+  border-radius: 10px 10px 0 0;
+  background: var(--rm-panel);
+  font-size: 12px;
+}
+.home-product-header > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.home-product-header i {
+  color: var(--rm-muted);
+  font-style: normal;
+}
+.home-snapshot {
+  color: var(--rm-muted);
+  font-size: 10px;
+}
+.home-product > .neural-map {
+  height: 510px;
+  border: 1px solid var(--rm-border);
+  border-radius: 0 0 10px 10px;
+}
+.home-preview-caption {
+  text-align: center;
+  font-size: 11px;
+  color: var(--rm-muted);
+  margin: 15px auto 0;
+  line-height: 1.7;
+}
+.home-features {
+  max-width: 1200px;
+  margin: 90px auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 60px;
+}
+.home-features article > svg {
+  color: var(--rm-muted);
+  margin-bottom: 20px;
+}
+.home-features h2 {
+  font-size: 19px;
+  font-weight: 550;
+  letter-spacing: -0.02em;
+  margin: 0 0 12px;
+}
+.home-features p {
+  color: var(--rm-muted);
+  font-size: 13px;
+  line-height: 1.9;
+  margin: 0;
+  max-width: 34ch;
+}
+.home-how {
+  max-width: 1152px;
+  margin: 0 auto 70px;
+  border-top: 1px solid var(--rm-border);
+  padding: 48px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 70px;
+}
+.home-how h2 {
+  font-size: 30px;
+  font-weight: 550;
+  letter-spacing: -0.03em;
+  max-width: 19ch;
+  margin: 0;
+}
+.home-how p {
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--rm-muted);
+  margin: 0;
+}
+.home-how a {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+}
+.home-footer {
+  border-top: 1px solid var(--rm-border);
+  max-width: 1320px;
+  margin: auto;
+  padding: 28px 0;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  font-size: 11px;
+  color: var(--rm-muted);
+}
+.home-footer .home-brand {
+  font-size: 16px;
+  color: var(--rm-ink);
+}
+.home-footer > a:last-child {
+  margin-left: auto;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.neural-map {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  font-size: 12px;
+}
+.neural-map:fullscreen {
+  width: 100vw;
+  height: 100vh;
+}
+.neural-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  min-height: 49px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--rm-border);
+  background: #151515;
+}
+.neural-toolbar > button {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-radius: 4px;
+}
+.neural-toolbar > button:hover {
+  background: #333;
+}
+.neural-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.neural-branch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  color: var(--rm-muted);
+}
+.neural-filters {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.neural-filters select {
+  background: #191919;
+  border: 1px solid var(--rm-border);
+  border-radius: 5px;
+  padding: 5px 7px;
+  color: var(--rm-ink);
+  font-size: 10px;
+  max-width: 145px;
+}
+.neural-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.neural-explorer {
+  width: 205px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--rm-border);
+  background: #171717;
+  min-height: 0;
+}
+.neural-explorer-heading {
+  display: flex;
+  justify-content: space-between;
+  padding: 13px 12px 9px;
+  font-size: 11px;
+}
+.neural-explorer-heading button {
+  color: var(--rm-muted);
+  font-size: 9px;
+}
+.neural-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 9px 12px;
+  border: 1px solid var(--rm-border);
+  border-radius: 5px;
+  padding: 7px;
+  color: var(--rm-muted);
+}
+.neural-search input {
+  min-width: 0;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--rm-ink);
+  font-size: 10px;
+}
+.neural-explorer nav {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+  padding-bottom: 10px;
+}
+.neural-tree-row {
+  display: flex;
+  align-items: center;
+  min-height: 29px;
+  padding-right: 10px;
+}
+.neural-tree-row:hover {
+  background: #242424;
+}
+.neural-tree-row.is-selected {
+  background: #33322f;
+}
+.neural-tree-row button:not(.tree-toggle) {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  gap: 7px;
+  text-align: left;
+  padding: 6px 0;
+  color: var(--rm-ink);
+}
+.neural-tree-row button svg {
+  flex-shrink: 0;
+  color: #bdb8a8;
+}
+.neural-tree-row button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+.tree-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 18px;
+  min-width: 18px;
+  height: 26px;
+  color: var(--rm-muted);
+}
+.neural-tree-note {
+  border-top: 1px solid var(--rm-border);
+  padding: 10px;
+  color: var(--rm-muted);
+  font-size: 9px;
+  margin: 0;
+}
+.neural-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.neural-canvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  min-height: 200px;
+}
+.neural-canvas canvas {
+  display: block;
+}
+.neural-tools {
+  position: absolute;
+  bottom: 18px;
+  right: 15px;
+  display: flex;
+  background: #191919;
+  border: 1px solid var(--rm-border);
+  border-radius: 6px;
+}
+.neural-tools button {
+  padding: 9px;
+  display: flex;
+}
+.neural-tools button:hover {
+  background: #333;
+}
+.neural-legend {
+  display: flex;
+  gap: 15px;
+  position: absolute;
+  bottom: 20px;
+  left: 18px;
+  font-size: 9px;
+  color: var(--rm-muted);
+  pointer-events: none;
+}
+.neural-legend span {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.neural-legend i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #bdb8a8;
+}
+.neural-legend .directory-dot {
+  width: 8px;
+  height: 8px;
+  background: #e8e4d3;
+}
+.neural-legend-line {
+  display: none !important;
+}
+.neural-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 13px;
+  border-top: 1px solid var(--rm-border);
+  font-size: 9px;
+  color: var(--rm-muted);
+  font-variant-numeric: tabular-nums;
+}
+.neural-footer a {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--rm-ink);
+}
+.neural-footer > span:last-child {
+  text-align: right;
+}
+.neural-assistant {
+  width: 260px;
+  flex-shrink: 0;
+  padding: 17px;
+  border-left: 1px solid var(--rm-border);
+  background: #171717;
+}
+.neural-assistant > div {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--rm-border);
+}
+.neural-assistant h3 {
+  font-size: 14px;
+  font-weight: 550;
+  margin: 22px 0 10px;
+}
+.neural-assistant p {
+  color: var(--rm-muted);
+  line-height: 1.8;
+  font-size: 11px;
+}
+.neural-assistant > span {
+  display: block;
+  color: var(--rm-muted);
+  font-size: 10px;
+  margin-top: 30px;
+}
+.neural-assistant a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--rm-border);
+  padding: 12px;
+  font-size: 10px;
+  border-radius: 5px;
+  margin-top: 12px;
+}
+.neural-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  height: 100%;
+  padding: 30px;
+  color: #aaa79d;
+  background: #101010;
+}
+.neural-empty p {
+  max-width: 40ch;
+  line-height: 1.8;
+}
+.neural-folder-detail {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  max-width: 230px;
+  padding: 14px;
+  border: 1px solid var(--rm-border);
+  border-radius: 7px;
+  background: #191919;
+  font-size: 11px;
+}
+.neural-folder-detail strong {
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+.neural-folder-detail button {
+  width: 100%;
+  text-align: left;
+  color: var(--rm-muted);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.neural-notice,
+.neural-no-results {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 11px;
+  color: var(--rm-muted);
+}
+.neural-muted {
+  color: var(--rm-muted);
+  padding: 12px;
+  font-size: 11px;
+}
+.repomind-home ::-webkit-scrollbar-track,
+.neural-map ::-webkit-scrollbar-track {
+  background: #191919;
+}
+.repomind-home ::-webkit-scrollbar-thumb,
+.neural-map ::-webkit-scrollbar-thumb {
+  background: #55534b;
+}
+@keyframes rm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.loading-spin {
+  animation: rm-spin 1.2s linear infinite;
+}
+@media (min-width: 1600px) {
+  .home-hero {
+    padding-top: 76px;
+    padding-bottom: 40px;
+  }
+  .home-product > .neural-map {
+    height: 580px;
+  }
+}
+@media (max-width: 1350px) {
+  .home-header,
+  .home-footer {
+    margin-left: 32px;
+    margin-right: 32px;
+  }
+  .home-how {
+    margin-left: 48px;
+    margin-right: 48px;
+  }
+}
+@media (max-width: 1050px) {
+  .neural-assistant {
+    display: none;
+  }
+  .home-header {
+    gap: 30px;
+  }
+  .home-features {
+    gap: 30px;
+  }
+}
+@media (max-width: 700px) {
+  .home-header {
+    height: 70px;
+    margin: 0 20px;
+    gap: 15px;
+  }
+  .home-header nav {
+    display: none;
+  }
+  .home-brand {
+    font-size: 20px;
+  }
+  .home-header > .home-outline {
+    padding: 9px 11px;
+    gap: 8px;
+    font-size: 10px;
+  }
+  .home-hero {
+    padding: 50px 20px 25px;
+  }
+  .home-hero h1 {
+    font-size: 43px;
+  }
+  .home-description {
+    font-size: 14px;
+  }
+  .desktop-break {
+    display: none;
+  }
+  .home-repo-form {
+    flex-direction: column;
+  }
+  .home-url {
+    flex: auto;
+  }
+  .home-primary {
+    width: 100%;
+  }
+  .home-product {
+    padding: 0 12px;
+  }
+  .home-snapshot {
+    max-width: 105px;
+    text-align: right;
+    font-size: 9px;
+  }
+  .home-product > .neural-map {
+    height: 460px;
+  }
+  .neural-preview .neural-explorer {
+    width: 145px;
+  }
+  .neural-preview .neural-tree-row button span {
+    font-size: 9px;
+  }
+  .neural-branch {
+    display: none;
+  }
+  .neural-filters {
+    gap: 4px;
+  }
+  .neural-filters select {
+    max-width: 115px;
+    font-size: 9px;
+    padding: 5px 3px;
+  }
+  .neural-toolbar {
+    gap: 7px;
+    padding: 8px;
+  }
+  .neural-explorer {
+    width: 175px;
+  }
+  .neural-footer > span:last-child {
+    display: none;
+  }
+  .neural-legend {
+    bottom: 65px;
+    left: 12px;
+  }
+  .home-features {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    margin: 60px 0;
+    padding: 0 28px;
+  }
+  .home-features p {
+    max-width: 50ch;
+  }
+  .home-how {
+    grid-template-columns: 1fr;
+    margin: 0 28px 35px;
+    padding: 35px 0;
+    gap: 18px;
+  }
+  .home-how a {
+    grid-column: 1;
+  }
+  .home-footer {
+    flex-wrap: wrap;
+    margin: 0 24px;
+    gap: 20px;
+  }
+  .home-footer > span {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .repomind-home *,
+  .neural-map * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
