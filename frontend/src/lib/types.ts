@@ -334,6 +334,15 @@ export interface CommitDiffResponse {
   files: CommitDiffFile[];
 }
 
+export interface IsolationScoreMeta {
+  score: number;
+  status: "safe_leaf" | "low_risk" | "moderate_risk" | "core_hub";
+  safety_label: string;
+  incoming_caller_count: number;
+  target_files: string[];
+  reason: string;
+}
+
 export interface GitHubIssue {
   number: number;
   title: string;
@@ -345,6 +354,8 @@ export interface GitHubIssue {
   labels: string[];
   comments_count: number;
   url: string;
+  isolation_meta?: IsolationScoreMeta;
+  is_simulated?: boolean;
 }
 
 export interface ContributionRoadmap {
@@ -356,6 +367,7 @@ export interface ContributionRoadmap {
   implementation_plan: string[];
   testing_checklist: string[];
   potential_risks: string[];
+  isolation_meta?: IsolationScoreMeta;
 }
 
 export interface ImpactAnalysisResponse {

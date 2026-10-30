@@ -10,6 +10,7 @@ import {
   CommitDiffResponse,
   GitHubIssue,
   ContributionRoadmap,
+  IsolationScoreMeta,
   ImpactAnalysisResponse,
   ProjectStructureResponse,
   DependencyMapResponse,
@@ -201,7 +202,7 @@ export async function generateContributionRoadmap(
   issueTitle: string,
   issueBody: string,
   beginnerMode: boolean
-): Promise<{ issue_number: number; beginner_mode: boolean; roadmap: ContributionRoadmap; relevant_files: string[] }> {
+): Promise<{ issue_number: number; beginner_mode: boolean; roadmap: ContributionRoadmap; relevant_files: string[]; isolation_meta?: IsolationScoreMeta }> {
   const res = await fetch(`${API_BASE}/contribution/roadmap`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
