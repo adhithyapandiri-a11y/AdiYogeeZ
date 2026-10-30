@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { 
   Orbit, 
   FolderTree, 
@@ -13,7 +14,6 @@ import {
   Sparkles,
   Network
 } from "lucide-react";
-import ObsidianConstellationGraph from "@/components/architecture/ObsidianConstellationGraph";
 import { RepositoryMapView } from "@/components/architecture/RepositoryMapView";
 import { ProjectStructureView } from "@/components/architecture/ProjectStructureView";
 import { DependencyMapView } from "@/components/architecture/DependencyMapView";
@@ -23,12 +23,25 @@ import CodeViewerModal from "@/components/common/CodeViewerModal";
 import { getRepository, getObsidianGraph } from "@/lib/api";
 import { Repository, ObsidianGraphData, ObsidianNode } from "@/lib/types";
 
+const ObsidianConstellationGraph = dynamic(
+  () => import("@/components/architecture/ObsidianConstellationGraph"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-[#090d16] text-slate-400 font-mono text-xs">
+        <div className="w-8 h-8 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin" />
+        <span>Loading Obsidian Cosmos constellation network...</span>
+      </div>
+    ),
+  }
+);
+
 function ArchitectureContent() {
   const params = useParams();
   const repoId = Number(params?.id);
 
-  // Default to the flagship Obsidian Cosmos Graph, with Repository Map also available
-  const [viewMode, setViewMode] = useState<"obsidian" | "map" | "structure" | "dependency" | "flow">("obsidian");
+  // Default to Repository Map (from PR #1), with Obsidian Cosmos also available as a flagship mode
+  const [viewMode, setViewMode] = useState<"obsidian" | "map" | "structure" | "dependency" | "flow">("map");
   const [repo, setRepo] = useState<Repository | null>(null);
   const [obsidianData, setObsidianData] = useState<ObsidianGraphData | null>(null);
   const [obsidianLoading, setObsidianLoading] = useState(true);
