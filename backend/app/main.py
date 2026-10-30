@@ -1,4 +1,12 @@
+import sys
+from pathlib import Path
 from contextlib import asynccontextmanager
+
+# Ensure repository root is on sys.path regardless of whether uvicorn is launched from repo root or backend/
+_repo_root = Path(__file__).resolve().parent.parent.parent
+if str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.config import settings
