@@ -1,0 +1,24 @@
+# Environment variables
+.env
+.env.local
+backend/.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+storage/
+
+# SQLite Database
+*.db
+repomind.db
+repomind.db-journal
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/.next/
+dist/
+build/
+.turbo/
+.DS_Store
