@@ -78,7 +78,7 @@ export default function Sidebar({ repoId, repo }: SidebarProps) {
   ];
 
   return (
-    <aside className="w-64 border-r border-white/10 bg-[#0c121e]/90 flex flex-col justify-between shrink-0 h-[calc(100vh-3.5rem)] sticky top-14 select-none">
+    <aside className="hidden lg:flex w-64 border-r border-white/10 bg-[#0c121e]/90 flex-col justify-between shrink-0 h-[calc(100vh-3.5rem)] sticky top-14 select-none">
       {/* Top Nav Items */}
       <div className="p-3 space-y-1">
         <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">

@@ -186,3 +186,7 @@ RepoMind analyzes source code without executing untrusted scripts:
    - Pick an issue, toggle Beginner Mode, and view the customized investigation steps, target files, and checklist.
 10. Open **Impact Analyzer**:
     - Enter a proposed change (e.g. *"Change request routing and header parsing"*) to calculate the blast radius across High, Medium, and Low impact tiers.
+
+## Interactive repository map
+
+Architecture Explorer now opens a graph-first **Repository Map**, with collapsible folders, keyboard path search, a file-list alternative and the existing source inspector. The former project-structure diagram remains available as **Hierarchy**; dependency and feature-flow views stay separate. See [map behaviour, indexed-data limits and verification](docs/REPOSITORY_MAP.md).

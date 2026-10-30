@@ -22,3 +22,8 @@ dist/
 build/
 .turbo/
 .DS_Store
+
+# Browser verification and local TypeScript state
+frontend/test-results/
+frontend/playwright-report/
+frontend/*.tsbuildinfo

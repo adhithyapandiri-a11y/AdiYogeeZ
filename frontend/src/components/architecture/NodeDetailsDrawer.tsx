@@ -1,19 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  X, 
-  FileCode, 
-  Code, 
-  Box, 
-  ArrowDownLeft, 
-  ArrowUpRight, 
+import {
+  X,
+  FileCode,
+  Code,
+  Box,
+  ArrowDownLeft,
+  ArrowUpRight,
   ExternalLink,
   Copy,
   Check,
-  Tag
+  Tag,
 } from "lucide-react";
 import { getNodeDetails } from "@/lib/api";
+import { SourcePreview } from "./repository-map/SourcePreview";
 import { NodeDetails } from "@/lib/types";
 
 interface NodeDetailsDrawerProps {
@@ -29,25 +30,39 @@ export default function NodeDetailsDrawer({
   filePath,
   onClose,
   onOpenFullCode,
-  onSelectRelatedFile
+  onSelectRelatedFile,
 }: NodeDetailsDrawerProps) {
   const [details, setDetails] = useState<NodeDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     if (!filePath) return;
+    let current = true;
     setLoading(true);
+    setDetails(null);
+    setError("");
     getNodeDetails(repoId, filePath)
       .then((data) => {
-        setDetails(data);
-        setLoading(false);
+        if (current) {
+          setDetails(data);
+          setLoading(false);
+        }
       })
       .catch((err) => {
-        console.error("Failed to load node details:", err);
-        setLoading(false);
+        if (current) {
+          setError(
+            err instanceof Error ? err.message : "Could not load file details.",
+          );
+          setLoading(false);
+        }
       });
-  }, [repoId, filePath]);
+    return () => {
+      current = false;
+    };
+  }, [repoId, filePath, retry]);
 
   if (!filePath) return null;
 
@@ -58,7 +73,11 @@ export default function NodeDetailsDrawer({
   };
 
   return (
-    <div className="absolute top-0 right-0 h-full w-[400px] z-30 bg-slate-950/95 border-l border-slate-800/90 backdrop-blur-2xl shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+    <div
+      role="complementary"
+      aria-label="File inspector"
+      className="absolute top-0 right-0 h-full w-[400px] max-w-full z-30 bg-slate-950/95 border-l border-slate-800/90 backdrop-blur-2xl shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+    >
       {/* Header */}
       <div className="p-4 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-slate-900/60">
         <div className="flex items-center space-x-2.5 truncate">
@@ -76,6 +95,7 @@ export default function NodeDetailsDrawer({
         </div>
         <button
           onClick={onClose}
+          aria-label="Close file inspector"
           className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
         >
           <X className="w-4 h-4" />
@@ -84,9 +104,21 @@ export default function NodeDetailsDrawer({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
-        {loading || !details ? (
+        {error ? (
+          <div role="alert" className="space-y-3 p-4 text-sm text-rose-300">
+            <p>{error}</p>
+            <button
+              className="rounded border border-slate-700 px-3 py-2 text-xs text-slate-200"
+              onClick={() => setRetry((n) => n + 1)}
+            >
+              Retry file details
+            </button>
+          </div>
+        ) : loading || !details ? (
           <div className="h-40 flex items-center justify-center text-slate-400">
-            <span className="font-mono text-xs">Loading node architecture details...</span>
+            <span className="font-mono text-xs">
+              Loading node architecture details...
+            </span>
           </div>
         ) : (
           <>
@@ -100,14 +132,20 @@ export default function NodeDetailsDrawer({
                   onClick={copyPath}
                   className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-indigo-400 transition-colors"
                 >
-                  {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  {copied ? (
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-3 h-3" />
+                  )}
                   <span>{copied ? "Copied" : "Copy Path"}</span>
                 </button>
               </div>
 
               <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">Architectural Role:</span>
+                  <span className="text-[11px] text-slate-400">
+                    Architectural Role:
+                  </span>
                   <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 font-mono border border-indigo-500/30 font-semibold">
                     {details.architectural_role || "Unknown"}
                   </span>
@@ -129,7 +167,9 @@ export default function NodeDetailsDrawer({
                     <Code className="w-3.5 h-3.5 text-sky-400" />
                     <span>Functions & Methods</span>
                   </span>
-                  <span className="text-slate-400 font-mono font-normal">({details.functions.length})</span>
+                  <span className="text-slate-400 font-mono font-normal">
+                    ({details.functions.length})
+                  </span>
                 </div>
                 <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
                   {details.functions.map((fn, idx) => (
@@ -138,7 +178,9 @@ export default function NodeDetailsDrawer({
                       className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-800/80 text-slate-300 font-mono text-[11px]"
                     >
                       <span className="truncate text-sky-300">{fn.name}()</span>
-                      <span className="text-[10px] text-slate-500">L{fn.lines}</span>
+                      <span className="text-[10px] text-slate-500">
+                        L{fn.lines}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -153,7 +195,9 @@ export default function NodeDetailsDrawer({
                     <Box className="w-3.5 h-3.5 text-violet-400" />
                     <span>Classes & Interfaces</span>
                   </span>
-                  <span className="text-slate-400 font-mono font-normal">({details.classes.length})</span>
+                  <span className="text-slate-400 font-mono font-normal">
+                    ({details.classes.length})
+                  </span>
                 </div>
                 <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
                   {details.classes.map((cls, idx) => (
@@ -161,8 +205,12 @@ export default function NodeDetailsDrawer({
                       key={idx}
                       className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-800/80 text-slate-300 font-mono text-[11px]"
                     >
-                      <span className="truncate text-violet-300">{cls.name}</span>
-                      <span className="text-[10px] text-slate-500">L{cls.lines}</span>
+                      <span className="truncate text-violet-300">
+                        {cls.name}
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        L{cls.lines}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -188,20 +236,32 @@ export default function NodeDetailsDrawer({
                 <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
                   {details.incoming_dependencies.map((dep, i) => {
                     const path = typeof dep === "string" ? dep : dep.file_path;
-                    const rel = typeof dep === "object" ? dep.relationship_type : "imports";
-                    const line = typeof dep === "object" ? dep.evidence_line : undefined;
+                    const rel =
+                      typeof dep === "object"
+                        ? dep.relationship_type
+                        : "imports";
+                    const line =
+                      typeof dep === "object" ? dep.evidence_line : undefined;
                     return (
                       <div
                         key={i}
-                        onClick={() => onSelectRelatedFile && onSelectRelatedFile(path)}
+                        onClick={() =>
+                          onSelectRelatedFile && onSelectRelatedFile(path)
+                        }
                         className="text-slate-300 bg-slate-900/60 px-2 py-1.5 rounded-lg truncate border border-slate-800/80 hover:border-indigo-500/50 hover:bg-slate-900 cursor-pointer flex items-center justify-between text-[11px] font-mono group"
                       >
-                        <span className="truncate group-hover:text-indigo-300">{path}</span>
+                        <span className="truncate group-hover:text-indigo-300">
+                          {path}
+                        </span>
                         <div className="flex items-center gap-1.5 shrink-0 ml-2">
                           <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-950/70 text-indigo-300 border border-indigo-800/40">
                             {rel}
                           </span>
-                          {line && <span className="text-[9px] text-slate-500">L{line}</span>}
+                          {line && (
+                            <span className="text-[9px] text-slate-500">
+                              L{line}
+                            </span>
+                          )}
                         </div>
                       </div>
                     );
@@ -229,20 +289,32 @@ export default function NodeDetailsDrawer({
                 <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
                   {details.outgoing_dependencies.map((dep, i) => {
                     const path = typeof dep === "string" ? dep : dep.file_path;
-                    const rel = typeof dep === "object" ? dep.relationship_type : "imports";
-                    const line = typeof dep === "object" ? dep.evidence_line : undefined;
+                    const rel =
+                      typeof dep === "object"
+                        ? dep.relationship_type
+                        : "imports";
+                    const line =
+                      typeof dep === "object" ? dep.evidence_line : undefined;
                     return (
                       <div
                         key={i}
-                        onClick={() => onSelectRelatedFile && onSelectRelatedFile(path)}
+                        onClick={() =>
+                          onSelectRelatedFile && onSelectRelatedFile(path)
+                        }
                         className="text-slate-300 bg-slate-900/60 px-2 py-1.5 rounded-lg truncate border border-slate-800/80 hover:border-indigo-500/50 hover:bg-slate-900 cursor-pointer flex items-center justify-between text-[11px] font-mono group"
                       >
-                        <span className="truncate group-hover:text-indigo-300">{path}</span>
+                        <span className="truncate group-hover:text-indigo-300">
+                          {path}
+                        </span>
                         <div className="flex items-center gap-1.5 shrink-0 ml-2">
                           <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-950/70 text-indigo-300 border border-indigo-800/40">
                             {rel}
                           </span>
-                          {line && <span className="text-[9px] text-slate-500">L{line}</span>}
+                          {line && (
+                            <span className="text-[9px] text-slate-500">
+                              L{line}
+                            </span>
+                          )}
                         </div>
                       </div>
                     );
@@ -256,8 +328,8 @@ export default function NodeDetailsDrawer({
               <div className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">
                 Code Preview
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] max-h-48 overflow-y-auto leading-relaxed text-slate-300 whitespace-pre">
-                {details.preview}
+              <div className="max-h-64 overflow-auto">
+                <SourcePreview source={details.preview} path={filePath} />
               </div>
             </div>
           </>

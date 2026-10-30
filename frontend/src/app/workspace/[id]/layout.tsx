@@ -40,7 +40,7 @@ function WorkspaceInner({ children }: { children: React.ReactNode }) {
       {/* Main Workspace with Sidebar */}
       <div className="flex-1 flex overflow-hidden">
         <Sidebar repoId={repoId} repo={repo} />
-        <main className="flex-1 flex flex-col overflow-hidden relative">
+        <main className="min-w-0 flex-1 flex flex-col overflow-hidden relative">
           {children}
         </main>
       </div>
