@@ -11,10 +11,7 @@ import {
   Boxes, 
   Cpu, 
   ArrowUpRight,
-  Sparkles,
-  Network
 } from "lucide-react";
-import { RepositoryMapView } from "@/components/architecture/RepositoryMapView";
 import { ProjectStructureView } from "@/components/architecture/ProjectStructureView";
 import { DependencyMapView } from "@/components/architecture/DependencyMapView";
 import { FeatureFlowView } from "@/components/architecture/FeatureFlowView";
@@ -40,8 +37,8 @@ function ArchitectureContent() {
   const params = useParams();
   const repoId = Number(params?.id);
 
-  // Default to Repository Map (from PR #1), with Obsidian Cosmos also available as a flagship mode
-  const [viewMode, setViewMode] = useState<"obsidian" | "map" | "structure" | "dependency" | "flow">("map");
+  // 4 Architecture Modes: Obsidian Cosmos (Flagship), Hierarchy (GitDiagram), Dependency Map, Feature Flow
+  const [viewMode, setViewMode] = useState<"obsidian" | "structure" | "dependency" | "flow">("obsidian");
   const [repo, setRepo] = useState<Repository | null>(null);
   const [obsidianData, setObsidianData] = useState<ObsidianGraphData | null>(null);
   const [obsidianLoading, setObsidianLoading] = useState(true);
@@ -73,7 +70,7 @@ function ArchitectureContent() {
 
   return (
     <div className="relative w-full h-[calc(100vh-3.5rem)] bg-[#090d16] flex flex-col overflow-hidden">
-      {/* Top 5-Mode Switcher Bar */}
+      {/* Top 4-Mode Switcher Bar */}
       <div className="h-14 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 flex items-center justify-between gap-3 overflow-x-auto shrink-0 z-20">
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-1 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono">
@@ -93,24 +90,7 @@ function ArchitectureContent() {
               <span>Obsidian Cosmos</span>
             </button>
 
-            {/* 2. Interactive Repository Map (PR #1) */}
-            <button
-              onClick={() => {
-                setViewMode("map");
-                setInspectedPath(null);
-              }}
-              className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 font-semibold transition-colors ${
-                viewMode === "map"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/25"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-              aria-pressed={viewMode === "map"}
-            >
-              <Network className="h-3.5 w-3.5 text-indigo-300" />
-              <span>Repository Map</span>
-            </button>
-
-            {/* 3. Hierarchy Tree */}
+            {/* 2. Hierarchy Tree (GitDiagram format) */}
             <button
               onClick={() => {
                 setViewMode("structure");
@@ -126,7 +106,7 @@ function ArchitectureContent() {
               <span>Hierarchy</span>
             </button>
 
-            {/* 4. Dependency Map */}
+            {/* 3. Dependency Map */}
             <button
               onClick={() => {
                 setViewMode("dependency");
@@ -142,7 +122,7 @@ function ArchitectureContent() {
               <span>Dependency Map</span>
             </button>
 
-            {/* 5. Feature Flow */}
+            {/* 4. Feature Flow */}
             <button
               onClick={() => {
                 setViewMode("flow");
@@ -195,7 +175,6 @@ function ArchitectureContent() {
       </div>
 
       {/* Main Exploration View Area */}
-      {/* Main Exploration View Area */}
       <div className="flex-1 relative min-w-0 w-full h-full overflow-hidden">
         {/* VIEW 1: Obsidian Cosmos Graph */}
         {viewMode === "obsidian" && (
@@ -219,15 +198,7 @@ function ArchitectureContent() {
           )
         )}
 
-        {/* VIEW 2: Interactive Repository Map */}
-        {viewMode === "map" && (
-          <RepositoryMapView
-            repoId={repoId}
-            repository={repo}
-            selectedFilePath={inspectedPath}
-            onSelectFile={setInspectedPath}
-          />
-        )}
+        {/* VIEW 2: Hierarchy (GitDiagram format) */}
         {viewMode === "structure" && (
           <ProjectStructureView
             repoId={repoId}

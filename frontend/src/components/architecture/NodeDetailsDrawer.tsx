@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   X,
   FileCode,
+  Folder,
   Code,
   Box,
   ArrowDownLeft,
@@ -14,7 +15,6 @@ import {
   Tag,
 } from "lucide-react";
 import { getNodeDetails } from "@/lib/api";
-import { SourcePreview } from "./repository-map/SourcePreview";
 import { NodeDetails } from "@/lib/types";
 
 interface NodeDetailsDrawerProps {
@@ -82,7 +82,11 @@ export default function NodeDetailsDrawer({
       <div className="p-4 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-slate-900/60">
         <div className="flex items-center space-x-2.5 truncate">
           <div className="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
-            <FileCode className="w-4 h-4 shrink-0" />
+            {details?.is_directory ? (
+              <Folder className="w-4 h-4 shrink-0 text-indigo-300" />
+            ) : (
+              <FileCode className="w-4 h-4 shrink-0" />
+            )}
           </div>
           <div className="truncate">
             <span className="font-semibold text-sm text-slate-100 truncate block font-mono">
@@ -158,6 +162,36 @@ export default function NodeDetailsDrawer({
                 </div>
               </div>
             </div>
+
+            {/* Contained Files for Directory Hub */}
+            {details.contained_files && details.contained_files.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Folder className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Files in Directory</span>
+                  </span>
+                  <span className="text-slate-400 font-mono font-normal">
+                    ({details.contained_files.length})
+                  </span>
+                </div>
+                <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
+                  {details.contained_files.map((file, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => onSelectRelatedFile && onSelectRelatedFile(file.file_path)}
+                      className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-slate-900 cursor-pointer text-slate-300 font-mono text-[11px] group transition-all"
+                    >
+                      <div className="flex items-center space-x-2 truncate">
+                        <FileCode className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <span className="truncate group-hover:text-indigo-300">{file.name}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 shrink-0 font-mono">{file.lines} lines</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Functions Detected */}
             {details.functions.length > 0 && (
@@ -328,8 +362,8 @@ export default function NodeDetailsDrawer({
               <div className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">
                 Code Preview
               </div>
-              <div className="max-h-64 overflow-auto">
-                <SourcePreview source={details.preview} path={filePath} />
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] max-h-48 overflow-y-auto leading-relaxed text-slate-300 whitespace-pre">
+                {details.preview}
               </div>
             </div>
           </>
@@ -339,11 +373,16 @@ export default function NodeDetailsDrawer({
       {/* Footer action */}
       <div className="p-3 border-t border-slate-800 bg-slate-950/80 shrink-0">
         <button
-          onClick={() => onOpenFullCode(filePath)}
+          onClick={() => {
+            const targetPath = (details?.is_directory && details.contained_files && details.contained_files.length > 0)
+              ? details.contained_files[0].file_path
+              : filePath;
+            onOpenFullCode(targetPath);
+          }}
           className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
         >
           <ExternalLink className="w-3.5 h-3.5" />
-          <span>Open in Full Code Viewer</span>
+          <span>{details?.is_directory ? "Inspect Directory in Code Viewer" : "Open in Full Code Viewer"}</span>
         </button>
       </div>
     </div>

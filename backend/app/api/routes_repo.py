@@ -1,7 +1,7 @@
 import asyncio
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
@@ -174,34 +174,97 @@ async def list_repo_files(repo_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.get("/{repo_id}/file-content")
 async def get_file_content(
-    repo_id: int, 
-    path: str = Query(...), 
+    repo_id: int,
+    path: str = Query(...),
     db: AsyncSession = Depends(get_db)
 ):
-    """Retrieve raw source code of a file by path."""
-    stmt = select(RepoFile).where(RepoFile.repository_id == repo_id, RepoFile.file_path == path)
+    """Retrieve raw source code of a file by path, with graceful directory and prefix fallback."""
+    raw_path = path.strip()
+    clean_path = raw_path.removeprefix("file:").removeprefix("dir:").removeprefix("sym:").strip("/")
+
+    # 1. Exact match
+    stmt = select(RepoFile).where(RepoFile.repository_id == repo_id, RepoFile.file_path == clean_path)
     res = await db.execute(stmt)
     rf = res.scalar_one_or_none()
+
+    # 2. Flexible file match (case-insensitive, suffix, or raw)
     if not rf:
-        raise HTTPException(status_code=404, detail="File not found in indexed repository.")
+        stmt = select(RepoFile).where(
+            RepoFile.repository_id == repo_id,
+            or_(
+                func.lower(RepoFile.file_path) == clean_path.lower(),
+                RepoFile.file_path.endswith("/" + clean_path),
+                RepoFile.file_path == raw_path
+            )
+        )
+        res = await db.execute(stmt)
+        rf = res.scalars().first()
 
-    # Also fetch symbols in this file
-    sym_stmt = select(CodeSymbol).where(CodeSymbol.file_id == rf.id)
-    sym_res = await db.execute(sym_stmt)
-    syms = sym_res.scalars().all()
+    if rf:
+        sym_stmt = select(CodeSymbol).where(CodeSymbol.file_id == rf.id)
+        sym_res = await db.execute(sym_stmt)
+        syms = sym_res.scalars().all()
 
-    return {
-        "file_path": rf.file_path,
-        "language": rf.language,
-        "content": rf.content,
-        "line_count": rf.line_count,
-        "symbols": [
-            {
-                "name": s.name,
-                "symbol_type": s.symbol_type,
-                "start_line": s.start_line,
-                "end_line": s.end_line
-            }
-            for s in syms
+        return {
+            "file_path": rf.file_path,
+            "language": rf.language or "Text",
+            "content": rf.content or "// Empty file",
+            "line_count": rf.line_count or 0,
+            "symbols": [
+                {
+                    "name": s.name,
+                    "symbol_type": s.symbol_type,
+                    "start_line": s.start_line,
+                    "end_line": s.end_line
+                }
+                for s in syms
+            ]
+        }
+
+    # 3. Directory hub fallback: synthesize readable directory listing so full code viewer never errors
+    dir_stmt = select(RepoFile).where(
+        RepoFile.repository_id == repo_id,
+        or_(
+            RepoFile.file_path.startswith(clean_path + "/"),
+            RepoFile.file_path.contains("/" + clean_path + "/"),
+            RepoFile.file_path.endswith("/" + clean_path)
+        )
+    )
+    dir_res = await db.execute(dir_stmt)
+    dir_files = dir_res.scalars().all()
+    if dir_files:
+        lines = [
+            f"// Directory Hub: {clean_path}",
+            f"// Contains {len(dir_files)} source files:",
+            "//" + "─" * 60,
         ]
-    }
+        for df in dir_files:
+            lines.append(f"// • {df.file_path} ({df.language}, {df.line_count or 0} lines)")
+
+        # Also append preview of primary file
+        primary_file = dir_files[0]
+        lines.append("")
+        lines.append(f"// ─── Primary file: {primary_file.file_path} ───")
+        lines.append(primary_file.content or "// Empty file")
+
+        sym_stmt = select(CodeSymbol).where(CodeSymbol.file_id == primary_file.id)
+        sym_res = await db.execute(sym_stmt)
+        syms = sym_res.scalars().all()
+
+        return {
+            "file_path": clean_path,
+            "language": primary_file.language or "Text",
+            "content": "\n".join(lines),
+            "line_count": len(lines),
+            "symbols": [
+                {
+                    "name": s.name,
+                    "symbol_type": s.symbol_type,
+                    "start_line": s.start_line,
+                    "end_line": s.end_line
+                }
+                for s in syms
+            ]
+        }
+
+    raise HTTPException(status_code=404, detail="File not found in indexed repository.")

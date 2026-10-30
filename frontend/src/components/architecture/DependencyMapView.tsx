@@ -70,7 +70,7 @@ export function DependencyMapView({
   selectedFilePath,
   onOpenFileViewer,
 }: DependencyMapViewProps) {
-  const [level, setLevel] = useState<"modules" | "files">("files");
+  const [level, setLevel] = useState<"modules" | "files">("modules");
   const [selectedModule, setSelectedModule] = useState<string | undefined>(undefined);
   const [data, setData] = useState<DependencyMapResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -84,7 +84,7 @@ export function DependencyMapView({
   const [activeRelTypes, setActiveRelTypes] = useState<Set<string>>(
     new Set(["imports", "calls", "inherits", "api", "data_access"])
   );
-  const [hideIsolated, setHideIsolated] = useState(false);
+  const [hideIsolated, setHideIsolated] = useState(true);
 
   // Focus & Edge inspection
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
@@ -144,7 +144,8 @@ export function DependencyMapView({
       } else {
         // File node selected
         setFocusedNodeId(node.id);
-        onSelectFile(node.id);
+        const filePath = (node.data as any)?.file_path || node.id.replace(/^file:/, "");
+        onSelectFile(filePath);
       }
     },
     [onSelectFile]

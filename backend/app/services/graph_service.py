@@ -72,7 +72,15 @@ class GraphService:
         """
         files_stmt = select(RepoFile).where(RepoFile.repository_id == repo_id)
         files_res = await session.execute(files_stmt)
-        files = files_res.scalars().all()
+        raw_files = files_res.scalars().all()
+
+        # Deduplicate files by canonical file_path
+        seen_paths = set()
+        files = []
+        for f in raw_files:
+            if f.file_path not in seen_paths:
+                seen_paths.add(f.file_path)
+                files.append(f)
 
         symbols_stmt = select(CodeSymbol).where(CodeSymbol.repository_id == repo_id)
         sym_res = await session.execute(symbols_stmt)
@@ -252,7 +260,15 @@ class GraphService:
         """
         files_stmt = select(RepoFile).where(RepoFile.repository_id == repo_id)
         files_res = await session.execute(files_stmt)
-        files = files_res.scalars().all()
+        raw_files = files_res.scalars().all()
+
+        # Deduplicate files by canonical file_path
+        seen_paths = set()
+        files = []
+        for f in raw_files:
+            if f.file_path not in seen_paths:
+                seen_paths.add(f.file_path)
+                files.append(f)
 
         deps_stmt = select(Dependency).where(Dependency.repository_id == repo_id)
         deps_res = await session.execute(deps_stmt)
@@ -454,7 +470,15 @@ class GraphService:
         """
         files_stmt = select(RepoFile).where(RepoFile.repository_id == repo_id)
         files_res = await session.execute(files_stmt)
-        files = files_res.scalars().all()
+        raw_files = files_res.scalars().all()
+
+        # Deduplicate files by canonical file_path
+        seen_paths = set()
+        files = []
+        for f in raw_files:
+            if f.file_path not in seen_paths:
+                seen_paths.add(f.file_path)
+                files.append(f)
 
         symbols_stmt = select(CodeSymbol).where(CodeSymbol.repository_id == repo_id)
         sym_res = await session.execute(symbols_stmt)
@@ -478,62 +502,6 @@ class GraphService:
 
         active_query = (workflow_query or "Request Routing & Handling").strip()
 
-        # Build stages deterministically based on actual indexed codebase
-        stages: List[Dict[str, Any]] = []
-
-        # Find entry point
-        entry_file = None
-        for f in files:
-            if f.architectural_role == "Entry Point":
-                entry_file = f
-                break
-        if not entry_file and files:
-            for f in files:
-                p = f.file_path.lower()
-                if "index." in p or "app." in p or "main." in p or "express." in p:
-                    entry_file = f
-                    break
-        if not entry_file and files:
-            entry_file = files[0]
-
-        # Find router / controller
-        router_file = None
-        for f in files:
-            if f.architectural_role == "Route / Controller":
-                router_file = f
-                break
-        if not router_file:
-            for f in files:
-                if "router" in f.file_path.lower() or "route" in f.file_path.lower():
-                    router_file = f
-                    break
-
-        # Find middleware or service
-        service_file = None
-        for f in files:
-            if f.architectural_role == "Service":
-                service_file = f
-                break
-        if not service_file:
-            for f in files:
-                if "middleware" in f.file_path.lower() or "layer" in f.file_path.lower():
-                    service_file = f
-                    break
-
-        # Find response / model / utility
-        response_file = None
-        for f in files:
-            if "response" in f.file_path.lower() or "view" in f.file_path.lower() or "model" in f.file_path.lower():
-                response_file = f
-                break
-
-        # Find error handler
-        error_file = None
-        for f in files:
-            if "error" in f.file_path.lower() or "status" in f.file_path.lower():
-                error_file = f
-                break
-
         # Helper to get snippet from file
         def get_snippet(f: RepoFile, keyword: str = "") -> Dict[str, Any]:
             lines = (f.content or "").splitlines()
@@ -545,7 +513,7 @@ class GraphService:
                         break
             start = max(1, target_line - 2)
             end = min(len(lines), target_line + 6)
-            snippet = "\n".join(lines[start - 1:end])
+            snippet = "\n".join(lines[start - 1:end]) if lines else "// Code reference"
             return {
                 "file_path": f.file_path,
                 "start_line": start,
@@ -553,81 +521,293 @@ class GraphService:
                 "snippet": snippet
             }
 
-        # Stage 1: Entry Point
-        if entry_file:
-            stages.append({
-                "stage_number": 1,
-                "title": "Application Entry & Initialization",
-                "component": entry_file.file_path,
-                "role": entry_file.architectural_role or "Entry Point",
-                "function_or_symbol": "createApplication / export",
-                "description": f"Incoming HTTP request arrives at the primary entry module '{os.path.basename(entry_file.file_path)}', configuring application prototypes and dispatch channels.",
-                "input_spec": "Incoming HTTP Connection / Request Header",
-                "output_spec": "Application Context & Dispatch Handlers",
-                "code_reference": get_snippet(entry_file, "express"),
-                "is_error_stage": False
-            })
+        # Build candidate file pools by architectural role & keywords
+        entry_file = next((f for f in files if f.architectural_role == "Entry Point"), None)
+        if not entry_file and files:
+            entry_file = next((f for f in files if any(k in f.file_path.lower() for k in ("index.", "app.", "main.", "express."))), files[0])
 
-        # Stage 2: Routing / Dispatch
-        if router_file:
-            stages.append({
-                "stage_number": 2,
-                "title": "Route Matching & Layer Traversal",
-                "component": router_file.file_path,
-                "role": router_file.architectural_role or "Route / Controller",
-                "function_or_symbol": "handle / dispatch",
-                "description": f"The router iterates matched route stacks in '{os.path.basename(router_file.file_path)}', testing URL path expressions against registered handlers.",
-                "input_spec": "Parsed Request URL & HTTP Method",
-                "output_spec": "Matching Route Handler Closure",
-                "code_reference": get_snippet(router_file, "handle"),
-                "is_error_stage": False
-            })
+        router_file = next((f for f in files if f.architectural_role == "Route / Controller"), None)
+        if not router_file and files:
+            router_file = next((f for f in files if any(k in f.file_path.lower() for k in ("route", "router", "controller"))), entry_file)
 
-        # Stage 3: Middleware Execution / Business Logic
-        if service_file:
-            stages.append({
-                "stage_number": 3,
-                "title": "Middleware Pipeline Execution",
-                "component": service_file.file_path,
-                "role": service_file.architectural_role or "Service",
-                "function_or_symbol": "handle_request / next()",
-                "description": f"Executes sequential middleware in '{os.path.basename(service_file.file_path)}', evaluating guards, headers, and transforming the request state.",
-                "input_spec": "Request (req), Response (res), and next callback",
-                "output_spec": "Transformed context or early termination",
-                "code_reference": get_snippet(service_file, "next"),
-                "is_error_stage": False
-            })
+        service_file = next((f for f in files if f.architectural_role == "Service"), None)
+        if not service_file and files:
+            service_file = next((f for f in files if any(k in f.file_path.lower() for k in ("middleware", "service", "layer", "util"))), router_file)
 
-        # Stage 4: Response Generation
-        if response_file:
-            stages.append({
-                "stage_number": 4,
-                "title": "Response Formatting & Transmission",
-                "component": response_file.file_path,
-                "role": response_file.architectural_role or "Data / Output",
-                "function_or_symbol": "send / json / format",
-                "description": f"Serializes output payloads in '{os.path.basename(response_file.file_path)}', formatting headers, content-type negotiation, and flushing socket buffers.",
-                "input_spec": "JSON Body / Render Template / Status Code",
-                "output_spec": "HTTP 200/201 Byte Stream to Client",
-                "code_reference": get_snippet(response_file, "send"),
-                "is_error_stage": False
-            })
+        response_file = next((f for f in files if any(k in f.file_path.lower() for k in ("response", "view", "json", "format", "render"))), service_file)
+        error_file = next((f for f in files if any(k in f.file_path.lower() for k in ("error", "status", "catch", "fallback"))), service_file)
 
-        # Stage 5: Error Boundary Fallback
-        fallback_file = error_file or router_file or entry_file
-        if fallback_file:
-            stages.append({
-                "stage_number": 5,
-                "title": "Error Propagation & Fallback",
-                "component": fallback_file.file_path,
-                "role": "Error Boundary",
-                "function_or_symbol": "handle_error(err, req, res, next)",
-                "description": f"Catches unhandled rejections or explicitly passed errors, formatting HTTP 500/404 payloads safely via '{os.path.basename(fallback_file.file_path)}'.",
-                "input_spec": "Error Object (err) caught in pipeline",
-                "output_spec": "Structured Error Response (HTTP 4xx / 5xx)",
-                "code_reference": get_snippet(fallback_file, "error"),
-                "is_error_stage": True
-            })
+        # Build stages deterministically based on active scenario
+        raw_stages: List[Dict[str, Any]] = []
+
+        if active_query == "Middleware Pipeline Execution":
+            raw_stages = [
+                {
+                    "title": "Request Ingestion & Header Verification",
+                    "component": entry_file.file_path if entry_file else "app.js",
+                    "role": "Entry Gateway",
+                    "function_or_symbol": "handle / onRequest",
+                    "description": f"Intercepts incoming HTTP transaction in '{os.path.basename(entry_file.file_path if entry_file else 'app.js')}', extracting protocol headers, IP provenance, and cookie tokens.",
+                    "input_spec": "Raw TCP Socket / HTTP Headers",
+                    "output_spec": "Decorated Request Context",
+                    "code_reference": get_snippet(entry_file if entry_file else files[0], "header"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "Security & Authentication Guard",
+                    "component": service_file.file_path if service_file else "middleware.js",
+                    "role": "Security Layer",
+                    "function_or_symbol": "authenticate / verifyToken",
+                    "description": f"Enforces perimeter security in '{os.path.basename(service_file.file_path if service_file else 'middleware.js')}', inspecting session state and bearer authorization credentials.",
+                    "input_spec": "Authorization Header / Session Token",
+                    "output_spec": "Authenticated Principal Claims",
+                    "code_reference": get_snippet(service_file if service_file else files[0], "auth"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "Payload Parsing & Parameter Normalization",
+                    "component": router_file.file_path if router_file else "router.js",
+                    "role": "Body Parser",
+                    "function_or_symbol": "parseBody / next()",
+                    "description": f"Decodes multi-part or JSON message bodies in '{os.path.basename(router_file.file_path if router_file else 'router.js')}', validating schema bounds before advancing dispatch pointer.",
+                    "input_spec": "Incoming Octet Stream / Content-Type",
+                    "output_spec": "Structured req.body Object",
+                    "code_reference": get_snippet(router_file if router_file else files[0], "next"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "Route Middleware Dispatch",
+                    "component": router_file.file_path if router_file else "router.js",
+                    "role": "Pipeline Executor",
+                    "function_or_symbol": "next() / Layer.handle",
+                    "description": f"Recursively steps through the registered middleware chain, cascading through matching path interceptors.",
+                    "input_spec": "Pipeline Index & Context",
+                    "output_spec": "Target Route Handler Invocation",
+                    "code_reference": get_snippet(router_file if router_file else files[0], "dispatch"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "Middleware Error Interceptor",
+                    "component": error_file.file_path if error_file else "error.js",
+                    "role": "Error Boundary",
+                    "function_or_symbol": "handleError(err, req, res, next)",
+                    "description": f"Traps synchronous exceptions or rejected asynchronous middleware promises, mitigating catastrophic pipeline stalls.",
+                    "input_spec": "Thrown Error Instance",
+                    "output_spec": "Sanitized HTTP Error Frame",
+                    "code_reference": get_snippet(error_file if error_file else files[0], "error"),
+                    "is_error_stage": True
+                }
+            ]
+        elif active_query == "JSON Response Generation":
+            raw_stages = [
+                {
+                    "title": "Route Controller Execution",
+                    "component": router_file.file_path if router_file else "controller.js",
+                    "role": "Controller",
+                    "function_or_symbol": "handle(req, res)",
+                    "description": f"Executes domain logic in '{os.path.basename(router_file.file_path if router_file else 'controller.js')}', preparing raw data models for client consumption.",
+                    "input_spec": "Validated Request Context",
+                    "output_spec": "Raw Domain Entity Object",
+                    "code_reference": get_snippet(router_file if router_file else files[0], "res"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "Content Negotiation & Formatting",
+                    "component": response_file.file_path if response_file else "response.js",
+                    "role": "Format Negotiator",
+                    "function_or_symbol": "format / accepts",
+                    "description": f"Evaluates client Accept headers in '{os.path.basename(response_file.file_path if response_file else 'response.js')}', choosing application/json representation.",
+                    "input_spec": "Accept: application/json Header",
+                    "output_spec": "MIME Type Assignment",
+                    "code_reference": get_snippet(response_file if response_file else files[0], "format"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "JSON Serialization & Header Formulation",
+                    "component": response_file.file_path if response_file else "response.js",
+                    "role": "Serializer",
+                    "function_or_symbol": "res.json(body)",
+                    "description": f"Serializes memory payload into UTF-8 JSON byte string, generating Content-Type and ETag caching signatures.",
+                    "input_spec": "Object / Array Payload",
+                    "output_spec": "Serialized JSON String & Status 200",
+                    "code_reference": get_snippet(response_file if response_file else files[0], "json"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "Socket Buffer Flushing & Transmission",
+                    "component": entry_file.file_path if entry_file else "app.js",
+                    "role": "Network Transport",
+                    "function_or_symbol": "res.end()",
+                    "description": f"Streams HTTP chunked wire payload to client socket connection, recording transaction duration.",
+                    "input_spec": "Serialized Response Buffer",
+                    "output_spec": "Completed HTTP 200 Wire Transfer",
+                    "code_reference": get_snippet(entry_file if entry_file else files[0], "send"),
+                    "is_error_stage": False
+                }
+            ]
+        elif active_query == "Error Handling & Fallback":
+            raw_stages = [
+                {
+                    "title": "Fault Inception / Unhandled Throw",
+                    "component": router_file.file_path if router_file else "router.js",
+                    "role": "Source of Fault",
+                    "function_or_symbol": "throw new Error / next(err)",
+                    "description": f"A controller or service in '{os.path.basename(router_file.file_path if router_file else 'router.js')}' throws an exception or calls next(err).",
+                    "input_spec": "Invalid State / External Fault",
+                    "output_spec": "Uncaught Error Object",
+                    "code_reference": get_snippet(router_file if router_file else files[0], "error"),
+                    "is_error_stage": True
+                },
+                {
+                    "title": "Error Middleware Routing",
+                    "component": service_file.file_path if service_file else "middleware.js",
+                    "role": "Router Boundary",
+                    "function_or_symbol": "Layer.handle_error",
+                    "description": f"Skips remaining non-error middleware stacks, isolating handlers with arity == 4 (err, req, res, next).",
+                    "input_spec": "Error Stack & Request Pointer",
+                    "output_spec": "Dedicated Error Middleware",
+                    "code_reference": get_snippet(service_file if service_file else files[0], "error"),
+                    "is_error_stage": True
+                },
+                {
+                    "title": "Sanitization & Error Payload Assembly",
+                    "component": error_file.file_path if error_file else "error.js",
+                    "role": "Sanitizer",
+                    "function_or_symbol": "formatErrorResponse",
+                    "description": f"Strips proprietary file paths and internal stack traces for production safety via '{os.path.basename(error_file.file_path if error_file else 'error.js')}'.",
+                    "input_spec": "Raw Error Stack",
+                    "output_spec": "Safe Diagnostic JSON Body",
+                    "code_reference": get_snippet(error_file if error_file else files[0], "status"),
+                    "is_error_stage": True
+                },
+                {
+                    "title": "Fallback Status 500 / 404 Transmission",
+                    "component": response_file.file_path if response_file else "response.js",
+                    "role": "Output Dispatcher",
+                    "function_or_symbol": "res.status(500).json()",
+                    "description": f"Flushes final HTTP 500 Internal Server Error response to client.",
+                    "input_spec": "Sanitized Error Context",
+                    "output_spec": "HTTP 500 Wire Stream",
+                    "code_reference": get_snippet(response_file if response_file else files[0], "status"),
+                    "is_error_stage": True
+                }
+            ]
+        elif active_query == "Application Initialization":
+            raw_stages = [
+                {
+                    "title": "Configuration & Environment Bootstrap",
+                    "component": entry_file.file_path if entry_file else "app.js",
+                    "role": "Bootstrap",
+                    "function_or_symbol": "initializeEnvironment",
+                    "description": f"Reads environment variables, setting application flags and debug modes.",
+                    "input_spec": "Process Environment (process.env)",
+                    "output_spec": "App Config Object",
+                    "code_reference": get_snippet(entry_file if entry_file else files[0], "env"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "Prototype & Prototype Augmentation",
+                    "component": service_file.file_path if service_file else "core.js",
+                    "role": "Core Engine",
+                    "function_or_symbol": "createApplication / init",
+                    "description": f"Configures application prototype methods and internal event emitters.",
+                    "input_spec": "App Prototype",
+                    "output_spec": "Ready Application Instance",
+                    "code_reference": get_snippet(service_file if service_file else files[0], "init"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "Top-Level Route & Sub-App Mounting",
+                    "component": router_file.file_path if router_file else "router.js",
+                    "role": "Route Binder",
+                    "function_or_symbol": "app.use / app.mount",
+                    "description": f"Mounts root routers, sub-applications, and top-level controllers into the primary layer stack.",
+                    "input_spec": "Route Blueprints",
+                    "output_spec": "Mounted Router Stack",
+                    "code_reference": get_snippet(router_file if router_file else files[0], "use"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "HTTP Server Binding & Listener Start",
+                    "component": entry_file.file_path if entry_file else "app.js",
+                    "role": "Network Listener",
+                    "function_or_symbol": "app.listen(port)",
+                    "description": f"Binds the application handler to a network interface and begins accepting incoming socket connections.",
+                    "input_spec": "Target Port & Hostname",
+                    "output_spec": "Active Listening TCP Socket",
+                    "code_reference": get_snippet(entry_file if entry_file else files[0], "listen"),
+                    "is_error_stage": False
+                }
+            ]
+        else:
+            # Default "Request Routing & Handling" or Custom query matching
+            # Search files matching query keywords if not the default
+            matching_files = [f for f in files if any(term in f.file_path.lower() for term in active_query.lower().split())]
+            custom_target = matching_files[0] if matching_files else service_file
+
+            raw_stages = [
+                {
+                    "title": "Application Entry & Initialization",
+                    "component": entry_file.file_path if entry_file else "index.js",
+                    "role": entry_file.architectural_role or "Entry Point",
+                    "function_or_symbol": "createApplication / export",
+                    "description": f"Incoming HTTP request arrives at the primary entry module '{os.path.basename(entry_file.file_path if entry_file else 'index.js')}', configuring application prototypes and dispatch channels.",
+                    "input_spec": "Incoming HTTP Connection / Request Header",
+                    "output_spec": "Application Context & Dispatch Handlers",
+                    "code_reference": get_snippet(entry_file if entry_file else files[0], "express"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "Route Matching & Layer Traversal",
+                    "component": router_file.file_path if router_file else "router.js",
+                    "role": router_file.architectural_role or "Route / Controller",
+                    "function_or_symbol": "handle / dispatch",
+                    "description": f"The router iterates matched route stacks in '{os.path.basename(router_file.file_path if router_file else 'router.js')}', testing URL path expressions against registered handlers.",
+                    "input_spec": "Parsed Request URL & HTTP Method",
+                    "output_spec": "Matching Route Handler Closure",
+                    "code_reference": get_snippet(router_file if router_file else files[0], "handle"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": f"Service Execution ({os.path.basename(custom_target.file_path if custom_target else 'service.js')})",
+                    "component": custom_target.file_path if custom_target else "service.js",
+                    "role": custom_target.architectural_role or "Service",
+                    "function_or_symbol": "handle_request / execute()",
+                    "description": f"Executes workflow business logic in '{os.path.basename(custom_target.file_path if custom_target else 'service.js')}', processing domain context for '{active_query}'.",
+                    "input_spec": "Request (req), Response (res), and next callback",
+                    "output_spec": "Processed context or payload data",
+                    "code_reference": get_snippet(custom_target if custom_target else files[0], active_query.split()[0]),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "Response Formatting & Transmission",
+                    "component": response_file.file_path if response_file else "response.js",
+                    "role": response_file.architectural_role or "Data / Output",
+                    "function_or_symbol": "send / json / format",
+                    "description": f"Serializes output payloads in '{os.path.basename(response_file.file_path if response_file else 'response.js')}', formatting headers, content-type negotiation, and flushing socket buffers.",
+                    "input_spec": "JSON Body / Render Template / Status Code",
+                    "output_spec": "HTTP 200/201 Byte Stream to Client",
+                    "code_reference": get_snippet(response_file if response_file else files[0], "send"),
+                    "is_error_stage": False
+                },
+                {
+                    "title": "Error Propagation & Fallback",
+                    "component": error_file.file_path if error_file else (entry_file.file_path if entry_file else "error.js"),
+                    "role": "Error Boundary",
+                    "function_or_symbol": "handle_error(err, req, res, next)",
+                    "description": f"Catches unhandled rejections or explicitly passed errors, formatting HTTP 500/404 payloads safely via '{os.path.basename(error_file.file_path if error_file else 'error.js')}'.",
+                    "input_spec": "Error Object (err) caught in pipeline",
+                    "output_spec": "Structured Error Response (HTTP 4xx / 5xx)",
+                    "code_reference": get_snippet(error_file if error_file else files[0], "error"),
+                    "is_error_stage": True
+                }
+            ]
+
+        # Enforce sequential stage numbering (1, 2, 3...)
+        stages = []
+        for idx, s in enumerate(raw_stages):
+            s["stage_number"] = idx + 1
+            stages.append(s)
 
         # Convert stages to React Flow nodes and edges
         nodes = []
@@ -637,14 +817,18 @@ class GraphService:
 
         for idx, stage in enumerate(stages):
             node_id = f"stage-{stage['stage_number']}"
+            is_err = stage["is_error_stage"]
             nodes.append({
                 "id": node_id,
                 "type": "featureStageNode",
-                "position": {"x": x_offset + (idx * 320), "y": y_offset if not stage["is_error_stage"] else y_offset + 180},
+                "position": {
+                    "x": x_offset + (idx * 380),
+                    "y": y_offset if not is_err else y_offset + 240
+                },
                 "data": stage
             })
 
-            if idx > 0 and not stage["is_error_stage"]:
+            if idx > 0 and not is_err:
                 prev_id = f"stage-{stages[idx - 1]['stage_number']}"
                 edges.append({
                     "id": f"e-stage-{prev_id}-{node_id}",
@@ -656,11 +840,15 @@ class GraphService:
                 })
 
         # Connect error stage from intermediate stages
-        if len(stages) >= 5:
+        error_stage = next((s for s in stages if s["is_error_stage"]), None)
+        if error_stage:
+            err_node_id = f"stage-{error_stage['stage_number']}"
+            source_stage = next((s for s in stages if s["stage_number"] in (2, 3) and not s["is_error_stage"]), stages[0])
+            src_node_id = f"stage-{source_stage['stage_number']}"
             edges.append({
-                "id": "e-stage-error-branch",
-                "source": "stage-2",
-                "target": "stage-5",
+                "id": f"e-stage-error-branch-{src_node_id}-{err_node_id}",
+                "source": src_node_id,
+                "target": err_node_id,
                 "type": "smoothstep",
                 "animated": True,
                 "style": {"stroke": "#f43f5e", "strokeWidth": 2, "strokeDasharray": "5,5"},
@@ -758,7 +946,15 @@ class GraphService:
         """
         files_stmt = select(RepoFile).where(RepoFile.repository_id == repo_id)
         files_res = await session.execute(files_stmt)
-        files = files_res.scalars().all()
+        raw_files = files_res.scalars().all()
+
+        # Deduplicate files by canonical file_path
+        seen_paths = set()
+        files = []
+        for f in raw_files:
+            if f.file_path not in seen_paths:
+                seen_paths.add(f.file_path)
+                files.append(f)
 
         symbols_stmt = select(CodeSymbol).where(CodeSymbol.repository_id == repo_id)
         sym_res = await session.execute(symbols_stmt)

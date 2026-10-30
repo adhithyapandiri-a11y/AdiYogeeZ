@@ -1,7 +1,8 @@
-from typing import Dict, Any, Optional
+import os
+from typing import Dict, Any, Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.database import get_db
@@ -51,61 +52,191 @@ async def get_edge_details(
 
 @router.get("/node-details/{repo_id}")
 async def get_node_details(
-    repo_id: int, 
-    path: str = Query(...), 
+    repo_id: int,
+    path: str = Query(...),
     db: AsyncSession = Depends(get_db)
 ):
-    """Slide-out inspector drawer data for a clicked node."""
-    stmt = select(RepoFile).where(RepoFile.repository_id == repo_id, RepoFile.file_path == path)
+    """Slide-out inspector drawer data for a clicked node (handles files, directory hubs, and symbols)."""
+    raw_path = path.strip()
+    clean_path = raw_path.removeprefix("file:").removeprefix("dir:").removeprefix("sym:").strip("/")
+
+    # Check if path had symbol prefix/suffix like "file_path:symbol"
+    if ":" in clean_path and not clean_path.startswith("http"):
+        parts = clean_path.split(":")
+        clean_path = parts[0]
+
+    # 1. Exact RepoFile match
+    stmt = select(RepoFile).where(RepoFile.repository_id == repo_id, RepoFile.file_path == clean_path)
     res = await db.execute(stmt)
     rf = res.scalars().first()
+
+    # 2. Flexible file match (case-insensitive, ends-with, or raw)
     if not rf:
-        raise HTTPException(status_code=404, detail="File node not found.")
+        stmt = select(RepoFile).where(
+            RepoFile.repository_id == repo_id,
+            or_(
+                func.lower(RepoFile.file_path) == clean_path.lower(),
+                RepoFile.file_path.endswith("/" + clean_path),
+                RepoFile.file_path == raw_path
+            )
+        )
+        res = await db.execute(stmt)
+        rf = res.scalars().first()
 
-    sym_stmt = select(CodeSymbol).where(CodeSymbol.file_id == rf.id)
-    sym_res = await db.execute(sym_stmt)
-    symbols = sym_res.scalars().all()
+    if rf:
+        sym_stmt = select(CodeSymbol).where(CodeSymbol.file_id == rf.id)
+        sym_res = await db.execute(sym_stmt)
+        symbols = sym_res.scalars().all()
 
-    # In/Out dependencies with relationship types
-    in_deps_stmt = select(Dependency).where(
-        Dependency.repository_id == repo_id, Dependency.target_file_path == path
+        in_deps_stmt = select(Dependency).where(
+            Dependency.repository_id == repo_id, Dependency.target_file_path == rf.file_path
+        )
+        in_res = await db.execute(in_deps_stmt)
+        incoming_deps = in_res.scalars().all()
+
+        out_deps_stmt = select(Dependency).where(
+            Dependency.repository_id == repo_id, Dependency.source_file_path == rf.file_path
+        )
+        out_res = await db.execute(out_deps_stmt)
+        outgoing_deps = out_res.scalars().all()
+
+        return {
+            "file_path": rf.file_path,
+            "language": rf.language or "Text",
+            "line_count": rf.line_count or 0,
+            "file_size": rf.file_size or 0,
+            "architectural_role": rf.architectural_role or "File Module",
+            "module_name": rf.module_name or (rf.file_path.split("/")[0] if "/" in rf.file_path else "Root"),
+            "preview": rf.content[:3500] if rf.content else "// No preview content available",
+            "functions": [
+                {"name": s.name, "lines": f"{s.start_line}-{s.end_line}", "type": s.symbol_type}
+                for s in symbols if s.symbol_type in ("function", "method")
+            ],
+            "classes": [
+                {"name": s.name, "lines": f"{s.start_line}-{s.end_line}", "type": s.symbol_type}
+                for s in symbols if s.symbol_type == "class"
+            ],
+            "incoming_dependencies": [
+                {"file_path": d.source_file_path, "relationship_type": d.relationship_type or "imports", "evidence_line": d.evidence_line}
+                for d in incoming_deps
+            ],
+            "outgoing_dependencies": [
+                {"file_path": d.target_file_path, "relationship_type": d.relationship_type or "imports", "evidence_line": d.evidence_line}
+                for d in outgoing_deps
+            ],
+            "is_directory": False,
+            "contained_files": []
+        }
+
+    # 3. Directory Hub resolution (prefix match, directory path, or subfolder)
+    dir_stmt = select(RepoFile).where(
+        RepoFile.repository_id == repo_id,
+        or_(
+            RepoFile.file_path.startswith(clean_path + "/"),
+            RepoFile.file_path.contains("/" + clean_path + "/"),
+            RepoFile.file_path.endswith("/" + clean_path),
+            RepoFile.file_path == clean_path
+        )
     )
+    dir_res = await db.execute(dir_stmt)
+    dir_files = dir_res.scalars().all()
+
+    if not dir_files and clean_path:
+        folder_name = clean_path.split("/")[-1]
+        fallback_stmt = select(RepoFile).where(
+            RepoFile.repository_id == repo_id,
+            RepoFile.file_path.contains("/" + folder_name + "/")
+        )
+        dir_res = await db.execute(fallback_stmt)
+        dir_files = dir_res.scalars().all()
+
+    if not dir_files:
+        raise HTTPException(status_code=404, detail=f"Node '{path}' not found in repository.")
+
+    dir_file_paths = [f.file_path for f in dir_files]
+    dir_file_ids = [f.id for f in dir_files]
+    folder_display_name = clean_path.split("/")[-1] or clean_path
+    total_lines = sum(f.line_count or 0 for f in dir_files)
+    total_size = sum(f.file_size or 0 for f in dir_files)
+
+    # Dominant language
+    lang_counts = {}
+    for f in dir_files:
+        l = f.language or "Text"
+        lang_counts[l] = lang_counts.get(l, 0) + 1
+    dominant_lang = max(lang_counts.items(), key=lambda x: x[1])[0] if lang_counts else "Directory"
+
+    # Aggregated symbols in this directory (up to 30)
+    syms_stmt = select(CodeSymbol).where(CodeSymbol.file_id.in_(dir_file_ids)).limit(40)
+    syms_res = await db.execute(syms_stmt)
+    all_syms = syms_res.scalars().all()
+
+    # External dependencies
+    in_deps_stmt = select(Dependency).where(
+        Dependency.repository_id == repo_id,
+        Dependency.target_file_path.in_(dir_file_paths),
+        ~Dependency.source_file_path.in_(dir_file_paths)
+    ).limit(30)
     in_res = await db.execute(in_deps_stmt)
-    incoming_deps = in_res.scalars().all()
+    dir_in_deps = in_res.scalars().all()
 
     out_deps_stmt = select(Dependency).where(
-        Dependency.repository_id == repo_id, Dependency.source_file_path == path
-    )
+        Dependency.repository_id == repo_id,
+        Dependency.source_file_path.in_(dir_file_paths),
+        ~Dependency.target_file_path.in_(dir_file_paths)
+    ).limit(30)
     out_res = await db.execute(out_deps_stmt)
-    outgoing_deps = out_res.scalars().all()
+    dir_out_deps = out_res.scalars().all()
 
-    incoming_list = [
-        {"file_path": d.source_file_path, "relationship_type": d.relationship_type or "imports", "evidence_line": d.evidence_line}
-        for d in incoming_deps
+    # ASCII file tree for preview
+    preview_lines = [
+        f"Directory Hub: {clean_path}",
+        f"Contained Files: {len(dir_files)} | Total Lines: {total_lines:,} | Size: {round(total_size / 1024, 1)} KB",
+        "--------------------------------------------------",
     ]
-    outgoing_list = [
-        {"file_path": d.target_file_path, "relationship_type": d.relationship_type or "imports", "evidence_line": d.evidence_line}
-        for d in outgoing_deps
+    for df in dir_files[:15]:
+        rel = df.file_path[len(clean_path):].lstrip("/") if df.file_path.startswith(clean_path) else os.path.basename(df.file_path)
+        preview_lines.append(f"  • {rel}  ({df.language}, {df.line_count or 0} lines)")
+    if len(dir_files) > 15:
+        preview_lines.append(f"  ... and {len(dir_files) - 15} more files")
+
+    contained_list = [
+        {
+            "file_path": f.file_path,
+            "name": os.path.basename(f.file_path),
+            "language": f.language or "Text",
+            "lines": f.line_count or 0,
+            "role": f.architectural_role or "File"
+        }
+        for f in dir_files
     ]
 
     return {
-        "file_path": rf.file_path,
-        "language": rf.language,
-        "line_count": rf.line_count,
-        "file_size": rf.file_size,
-        "architectural_role": rf.architectural_role or "Unknown",
-        "module_name": rf.module_name or "Core",
-        "preview": rf.content[:2500],
+        "file_path": clean_path,
+        "language": f"{dominant_lang} (Directory)",
+        "line_count": total_lines,
+        "file_size": total_size,
+        "architectural_role": "Directory Hub / Package Module",
+        "module_name": folder_display_name,
+        "preview": "\n".join(preview_lines),
         "functions": [
-            {"name": s.name, "lines": f"{s.start_line}-{s.end_line}", "type": s.symbol_type} 
-            for s in symbols if s.symbol_type in ("function", "method")
-        ],
+            {"name": s.name, "lines": f"{s.start_line}-{s.end_line}", "type": s.symbol_type}
+            for s in all_syms if s.symbol_type in ("function", "method")
+        ][:25],
         "classes": [
-            {"name": s.name, "lines": f"{s.start_line}-{s.end_line}", "type": s.symbol_type} 
-            for s in symbols if s.symbol_type == "class"
+            {"name": s.name, "lines": f"{s.start_line}-{s.end_line}", "type": s.symbol_type}
+            for s in all_syms if s.symbol_type == "class"
+        ][:20],
+        "incoming_dependencies": [
+            {"file_path": d.source_file_path, "relationship_type": d.relationship_type or "imports", "evidence_line": d.evidence_line}
+            for d in dir_in_deps
         ],
-        "incoming_dependencies": incoming_list,
-        "outgoing_dependencies": outgoing_list
+        "outgoing_dependencies": [
+            {"file_path": d.target_file_path, "relationship_type": d.relationship_type or "imports", "evidence_line": d.evidence_line}
+            for d in dir_out_deps
+        ],
+        "is_directory": True,
+        "contained_files": contained_list
     }
 
 # Obsidian Constellation Graph Endpoint

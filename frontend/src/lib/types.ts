@@ -231,6 +231,8 @@ export interface NodeDetails {
   classes: Array<{ name: string; lines: string; type?: string }>;
   incoming_dependencies: Array<{ file_path: string; relationship_type?: string; evidence_line?: number }> | string[];
   outgoing_dependencies: Array<{ file_path: string; relationship_type?: string; evidence_line?: number }> | string[];
+  is_directory?: boolean;
+  contained_files?: Array<{ file_path: string; name: string; language: string; lines: number; role?: string }>;
 }
 
 export interface ObsidianNode {
