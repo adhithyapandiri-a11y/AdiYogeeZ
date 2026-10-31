@@ -23,6 +23,9 @@ import {
   EyeOff,
   Maximize2,
   Box,
+  SkipForward,
+  SkipBack,
+  CheckCircle2,
 } from "lucide-react";
 import { ObsidianGraphData, ObsidianNode, ObsidianLink } from "@/lib/types";
 
@@ -41,6 +44,18 @@ interface ObsidianGraphProps {
   data: ObsidianGraphData;
   onSelectNode: (node: ObsidianNode) => void;
   selectedFilePath?: string | null;
+}
+
+export interface TourStep {
+  id: string;
+  stageName: string;
+  badge: string;
+  title: string;
+  targetNodeId: string | null;
+  targetPath?: string;
+  description: string;
+  architecturalInsight: string;
+  distance: number;
 }
 
 export default function ObsidianConstellationGraph({
@@ -64,6 +79,14 @@ export default function ObsidianConstellationGraph({
   const [showParticles, setShowParticles] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [nodeTypeFilter, setNodeTypeFilter] = useState<"all" | "directory" | "file">("all");
+
+  // --- IDEA #4: 30-SECOND GUIDED TOUR (ARCHITECTURE STORYTELLER) STATE ---
+  const [isTourActive, setIsTourActive] = useState(false);
+  const [tourStepIndex, setTourStepIndex] = useState(0);
+  const [isTourPaused, setIsTourPaused] = useState(false);
+  const [tourProgress, setTourProgress] = useState(0);
+  const tourIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const tourProgressRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track container size
   useEffect(() => {
@@ -146,9 +169,192 @@ export default function ObsidianConstellationGraph({
     };
   }, [data, selectedLanguage, nodeTypeFilter, searchQuery]);
 
+  // Generate dynamic 5-stage architecture tour steps based on AST graph nodes
+  const tourSteps: TourStep[] = useMemo(() => {
+    if (!data?.nodes || data.nodes.length === 0) return [];
+
+    const nodes = data.nodes;
+    const usedIds = new Set<string>();
+
+    const findNode = (keywords: string[]): ObsidianNode | null => {
+      for (const kw of keywords) {
+        const match = nodes.find(
+          (n) => !usedIds.has(n.id) && n.type === "file" && n.name.toLowerCase().includes(kw)
+        );
+        if (match) return match;
+      }
+      for (const kw of keywords) {
+        const match = nodes.find(
+          (n) => !usedIds.has(n.id) && (n.path || "").toLowerCase().includes(kw)
+        );
+        if (match) return match;
+      }
+      return null;
+    };
+
+    // 1. Entrypoint (main, index, app, server, entry)
+    const entryNode = findNode(["main", "index", "app", "server", "entry"]) || nodes[0];
+    if (entryNode) usedIds.add(entryNode.id);
+
+    // 2. Dispatch / Router (route, api, controller, router, endpoint)
+    const routerNode = findNode(["route", "api", "controller", "router", "endpoint"]) || 
+      nodes.find(n => !usedIds.has(n.id) && (n.inDegree || 0) > 1) || nodes[1] || entryNode;
+    if (routerNode) usedIds.add(routerNode.id);
+
+    // 3. Core Business Engine (service, core, engine, auth, logic, lib)
+    const serviceNode = findNode(["service", "core", "engine", "auth", "logic", "workflow", "lib"]) ||
+      nodes.find(n => !usedIds.has(n.id) && (n.outDegree || 0) > 2) || nodes[2] || routerNode;
+    if (serviceNode) usedIds.add(serviceNode.id);
+
+    // 4. Persistence Layer (db, model, schema, database, entity, store)
+    const dbNode = findNode(["db", "model", "schema", "database", "entity", "store", "repo"]) ||
+      nodes.find(n => !usedIds.has(n.id) && n.type === "file") || nodes[3] || serviceNode;
+    if (dbNode) usedIds.add(dbNode.id);
+
+    return [
+      {
+        id: "step-1-entry",
+        stageName: "Stage 1: The Front Door",
+        badge: "ENTRYPOINT",
+        title: entryNode ? `${entryNode.name} — Application Bootstrapper` : "Application Entrypoint",
+        targetNodeId: entryNode ? entryNode.id : null,
+        targetPath: entryNode?.path,
+        description: "Execution begins here. Environment variables are parsed, middleware pipelines are registered, and network listeners are initialized.",
+        architecturalInsight: "AST Analysis: Primary bootstrap node with root dependency fan-out.",
+        distance: 170
+      },
+      {
+        id: "step-2-router",
+        stageName: "Stage 2: Traffic Controller",
+        badge: "DISPATCH LAYER",
+        title: routerNode ? `${routerNode.name} — API Routing & Handlers` : "API Routing Layer",
+        targetNodeId: routerNode ? routerNode.id : null,
+        targetPath: routerNode?.path,
+        description: "Incoming HTTP requests and WebSocket connections are validated and routed to corresponding controllers.",
+        architecturalInsight: "Decoupled transport interface keeping protocol handling distinct from domain logic.",
+        distance: 170
+      },
+      {
+        id: "step-3-core",
+        stageName: "Stage 3: The Engine",
+        badge: "BUSINESS LOGIC",
+        title: serviceNode ? `${serviceNode.name} — Core Domain Engine` : "Core Business Logic",
+        targetNodeId: serviceNode ? serviceNode.id : null,
+        targetPath: serviceNode?.path,
+        description: "Central processing layer executing business policies, authentication checks, computational logic, and background tasks.",
+        architecturalInsight: "High central cohesion with incoming callers from routes and outbound calls to storage.",
+        distance: 170
+      },
+      {
+        id: "step-4-db",
+        stageName: "Stage 4: The Vault",
+        badge: "PERSISTENCE",
+        title: dbNode ? `${dbNode.name} — Database & Schemas` : "Data Persistence Layer",
+        targetNodeId: dbNode ? dbNode.id : null,
+        targetPath: dbNode?.path,
+        description: "Relational database tables, ORM models, migration definitions, and persistence repositories store application state.",
+        architecturalInsight: "Lowest layer in the dependency DAG; leaf entities with zero reverse upstream dependencies.",
+        distance: 170
+      },
+      {
+        id: "step-5-cosmos",
+        stageName: "Stage 5: Overview",
+        badge: "SYSTEM GALAXY",
+        title: "Complete Architecture Cosmos",
+        targetNodeId: null,
+        description: "Tour complete! You now understand how data and control flow across the full application topology.",
+        architecturalInsight: "The 3D knowledge graph is now fully interactive. Click any node to inspect callers, functions, and line-level code.",
+        distance: 850
+      }
+    ];
+  }, [data?.nodes]);
+
+  // Navigate to specific tour step
+  const navigateToTourStep = useCallback((stepIndex: number) => {
+    if (!tourSteps || tourSteps.length === 0) return;
+    const safeIndex = Math.max(0, Math.min(stepIndex, tourSteps.length - 1));
+    setTourStepIndex(safeIndex);
+    setTourProgress(0);
+
+    const step = tourSteps[safeIndex];
+    if (!fgRef.current) return;
+
+    if (step.targetNodeId) {
+      const targetNode = graphData.nodes.find((n) => n.id === step.targetNodeId);
+      if (targetNode && targetNode.x !== undefined && targetNode.y !== undefined && targetNode.z !== undefined) {
+        const distance = step.distance || 170;
+        const hyp = Math.hypot(targetNode.x, targetNode.y, targetNode.z) || 1;
+        const distRatio = 1 + distance / hyp;
+        fgRef.current.cameraPosition(
+          { x: targetNode.x * distRatio, y: targetNode.y * distRatio + 25, z: targetNode.z * distRatio },
+          targetNode,
+          1500
+        );
+        onSelectNode(targetNode as ObsidianNode);
+        return;
+      }
+    }
+
+    // Default overview camera fly-back
+    fgRef.current.cameraPosition({ x: 0, y: 0, z: 900 }, { x: 0, y: 0, z: 0 }, 1500);
+  }, [tourSteps, graphData.nodes, onSelectNode]);
+
+  // Tour Controller: Start Guided Tour
+  const startGuidedTour = () => {
+    setIsTourActive(true);
+    setIsTourPaused(false);
+    setAutoRotate(false);
+    navigateToTourStep(0);
+  };
+
+  // Tour Controller: Exit Tour
+  const exitGuidedTour = () => {
+    setIsTourActive(false);
+    setIsTourPaused(false);
+    setTourProgress(0);
+    if (tourIntervalRef.current) clearTimeout(tourIntervalRef.current);
+    if (tourProgressRef.current) clearInterval(tourProgressRef.current);
+
+    if (fgRef.current) {
+      fgRef.current.cameraPosition({ x: 0, y: 0, z: 900 }, { x: 0, y: 0, z: 0 }, 1200);
+    }
+  };
+
+  // Auto-advance timer (6 seconds per step = ~30s total)
+  useEffect(() => {
+    if (!isTourActive || isTourPaused) {
+      if (tourIntervalRef.current) clearTimeout(tourIntervalRef.current);
+      if (tourProgressRef.current) clearInterval(tourProgressRef.current);
+      return;
+    }
+
+    const stepDuration = 6000;
+    const intervalTick = 50;
+    let currentMs = 0;
+
+    tourProgressRef.current = setInterval(() => {
+      currentMs += intervalTick;
+      const pct = Math.min(100, (currentMs / stepDuration) * 100);
+      setTourProgress(pct);
+    }, intervalTick);
+
+    tourIntervalRef.current = setTimeout(() => {
+      if (tourStepIndex < tourSteps.length - 1) {
+        navigateToTourStep(tourStepIndex + 1);
+      } else {
+        exitGuidedTour();
+      }
+    }, stepDuration);
+
+    return () => {
+      if (tourIntervalRef.current) clearTimeout(tourIntervalRef.current);
+      if (tourProgressRef.current) clearInterval(tourProgressRef.current);
+    };
+  }, [isTourActive, isTourPaused, tourStepIndex, tourSteps.length, navigateToTourStep]);
+
   // Auto-Orbit (360° Galaxy Revolution in 3D Space)
   useEffect(() => {
-    if (!autoRotate) return;
+    if (!autoRotate || isTourActive) return;
     let angle = 0;
     const distance = 850;
     const interval = setInterval(() => {
@@ -160,7 +366,7 @@ export default function ObsidianConstellationGraph({
       });
     }, 25);
     return () => clearInterval(interval);
-  }, [autoRotate]);
+  }, [autoRotate, isTourActive]);
 
   // Click-to-Focus Smooth Camera Fly-To in 3D
   const handleNodeClick = useCallback(
@@ -227,33 +433,40 @@ export default function ObsidianConstellationGraph({
     }
   };
 
+  const currentStep = tourSteps[tourStepIndex];
+
   // Three.js billboard text labels for 3D nodes (SpriteText)
   const handleNodeThreeObject = useCallback(
     (node: any) => {
       if (!showLabels) return new THREE.Object3D();
       const isDir = node.type === "directory";
       const isSymbol = node.type === "symbol";
+      const isTourTarget = isTourActive && currentStep?.targetNodeId === node.id;
 
-      // For satellites, only show text label on hover or selection
-      if (isSymbol && hoveredNode?.id !== node.id && selectedFilePath !== node.path) {
+      // For satellites, only show text label on hover or selection or tour focus
+      if (isSymbol && hoveredNode?.id !== node.id && selectedFilePath !== node.path && !isTourTarget) {
         return new THREE.Object3D();
       }
 
       const sprite = new SpriteText(node.name || "");
-      sprite.color = isDir ? "#e0e7ff" : "#f1f5f9";
-      sprite.textHeight = isDir ? 7 : 4.2;
+      sprite.color = isTourTarget ? "#38bdf8" : isDir ? "#e0e7ff" : "#f1f5f9";
+      sprite.textHeight = isTourTarget ? 9 : isDir ? 7 : 4.2;
       sprite.fontFace = "monospace";
-      sprite.fontWeight = isDir ? "bold" : "normal";
-      sprite.backgroundColor = isDir ? "rgba(15, 23, 42, 0.85)" : "rgba(15, 23, 42, 0.75)";
-      sprite.borderColor = node.color || "#6366f1";
-      sprite.borderWidth = 0.5;
+      sprite.fontWeight = isTourTarget || isDir ? "bold" : "normal";
+      sprite.backgroundColor = isTourTarget
+        ? "rgba(14, 165, 233, 0.4)"
+        : isDir
+        ? "rgba(15, 23, 42, 0.85)"
+        : "rgba(15, 23, 42, 0.75)";
+      sprite.borderColor = isTourTarget ? "#38bdf8" : node.color || "#6366f1";
+      sprite.borderWidth = isTourTarget ? 1.5 : 0.5;
       sprite.borderRadius = 3;
       sprite.padding = 2;
       sprite.position.y = isDir ? 14 : 9;
 
       return sprite;
     },
-    [showLabels, hoveredNode, selectedFilePath]
+    [showLabels, hoveredNode, selectedFilePath, isTourActive, currentStep]
   );
 
   return (
@@ -269,7 +482,11 @@ export default function ObsidianConstellationGraph({
         graphData={graphData}
         nodeId="id"
         nodeVal="val"
-        nodeColor={(node: any) => node.color || "#6366f1"}
+        nodeColor={(node: any) =>
+          isTourActive && currentStep?.targetNodeId === node.id
+            ? "#38bdf8"
+            : node.color || "#6366f1"
+        }
         nodeOpacity={0.92}
         nodeResolution={16}
         nodeThreeObject={handleNodeThreeObject as any}
@@ -388,6 +605,27 @@ export default function ObsidianConstellationGraph({
               ))}
             </div>
           )}
+
+          {/* --- IDEA #4: 30-SECOND GUIDED TOUR HERO BUTTON --- */}
+          {!isTourActive ? (
+            <button
+              onClick={startGuidedTour}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 via-indigo-600 to-violet-600 hover:from-cyan-500 hover:to-violet-500 text-white text-xs font-mono font-semibold shadow-lg shadow-indigo-600/30 border border-indigo-400/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              title="Start automated 30-second architectural walkthrough"
+            >
+              <Play className="w-3.5 h-3.5 fill-current text-cyan-200" />
+              <span>30s Guided Tour</span>
+              <Sparkles className="w-3 h-3 text-cyan-300 animate-pulse" />
+            </button>
+          ) : (
+            <button
+              onClick={exitGuidedTour}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-mono font-semibold transition-all"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Exit Tour</span>
+            </button>
+          )}
         </div>
 
         {/* Right: 3D Control Actions */}
@@ -473,6 +711,111 @@ export default function ObsidianConstellationGraph({
           </button>
         </div>
       </div>
+
+      {/* --- IDEA #4: CINEMATIC ARCHITECTURE STORYTELLER HUD (FLOATING BANNER) --- */}
+      {isTourActive && currentStep && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-2xl px-4 animate-in fade-in slide-in-from-bottom-4 duration-300 font-mono">
+          <div className="p-5 rounded-2xl bg-slate-950/95 border border-cyan-500/40 backdrop-blur-2xl shadow-2xl shadow-cyan-500/10 space-y-3.5 relative overflow-hidden">
+            {/* Countdown Progress Bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-slate-800">
+              <div 
+                className="h-full bg-gradient-to-r from-cyan-400 to-indigo-500 transition-all duration-75 ease-linear"
+                style={{ width: `${tourProgress}%` }}
+              />
+            </div>
+
+            {/* Stage Badge & Step Count */}
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center space-x-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  {currentStep.badge}
+                </span>
+                <span className="text-xs text-slate-400">
+                  {currentStep.stageName}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2 text-[11px] text-slate-400">
+                <span>Step {tourStepIndex + 1} of {tourSteps.length}</span>
+                <button
+                  onClick={exitGuidedTour}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition"
+                  title="Close tour"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Title & Description */}
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-white flex items-center space-x-2">
+                <span>{currentStep.title}</span>
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {currentStep.description}
+              </p>
+            </div>
+
+            {/* Compiler AST Insight */}
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-white/5 text-[11px] text-cyan-300 flex items-center space-x-2">
+              <Compass className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span className="truncate">{currentStep.architecturalInsight}</span>
+            </div>
+
+            {/* Interactive Player Controls */}
+            <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+              <div className="flex items-center space-x-1.5">
+                <button
+                  onClick={() => navigateToTourStep(tourStepIndex - 1)}
+                  disabled={tourStepIndex === 0}
+                  className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition"
+                  title="Previous stage"
+                >
+                  <SkipBack className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setIsTourPaused(!isTourPaused)}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 hover:text-white text-xs font-semibold flex items-center space-x-1.5 transition"
+                >
+                  {isTourPaused ? (
+                    <>
+                      <Play className="w-3 h-3 fill-current text-cyan-400" />
+                      <span>Resume</span>
+                    </>
+                  ) : (
+                    <>
+                      <Pause className="w-3 h-3 fill-current text-amber-400" />
+                      <span>Pause</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => navigateToTourStep(tourStepIndex + 1)}
+                  disabled={tourStepIndex === tourSteps.length - 1}
+                  className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition"
+                  title="Next stage"
+                >
+                  <SkipForward className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {currentStep.targetPath && (
+                <button
+                  onClick={() => {
+                    const node = graphData.nodes.find((n) => n.id === currentStep.targetNodeId);
+                    if (node) onSelectNode(node as ObsidianNode);
+                  }}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center space-x-1 transition"
+                >
+                  <span>Inspect Code</span>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Left 3D Legend HUD */}
       <div className="absolute bottom-4 left-4 z-20 pointer-events-none">
