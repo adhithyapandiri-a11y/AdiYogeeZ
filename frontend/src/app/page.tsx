@@ -60,7 +60,8 @@ export default function LandingPage() {
       tag: "GROUNDED RAG",
       desc: "Conversational codebase intelligence strictly grounded in parsed AST code excerpts, citing verified file paths and exact line ranges.",
       icon: MessageSquareCode,
-      highlight: "Direct Source Citations"
+      highlight: "Direct Source Citations",
+      route: "chat"
     },
     {
       num: "02",
@@ -68,7 +69,8 @@ export default function LandingPage() {
       tag: "OBSIDIAN COSMOS",
       desc: "Interactive force-directed graph with directory hubs, file nodes sized by connectivity, and satellite functions in dynamic 2D/3D physics.",
       icon: Orbit,
-      highlight: "Force-Directed Physics"
+      highlight: "3D Force-Directed Galaxy & 30s Tour",
+      route: "architecture"
     },
     {
       num: "03",
@@ -76,7 +78,8 @@ export default function LandingPage() {
       tag: "CALL GRAPH",
       desc: "Traces incoming callers and downstream invocations across files to map functional relationships and call hierarchies.",
       icon: GitFork,
-      highlight: "Multi-Hop Traversal"
+      highlight: "Multi-Hop Traversal",
+      route: "execution-path"
     },
     {
       num: "04",
@@ -84,7 +87,8 @@ export default function LandingPage() {
       tag: "GIT ARCHAEOLOGY",
       desc: "Inspect commit histories, interactive diffs, and receive architectural summaries grounded in changes across commits.",
       icon: History,
-      highlight: "Commit Diff Synthesis"
+      highlight: "Commit Diff Synthesis",
+      route: "time-machine"
     },
     {
       num: "05",
@@ -92,7 +96,8 @@ export default function LandingPage() {
       tag: "ISSUE ROADMAPS",
       desc: "Converts unfamiliar GitHub issues into actionable, step-by-step contribution checklists with target files and functions to modify.",
       icon: Compass,
-      highlight: "Automated Onboarding"
+      highlight: "Automated Onboarding & Draft Patch",
+      route: "contribution"
     },
     {
       num: "06",
@@ -100,7 +105,8 @@ export default function LandingPage() {
       tag: "BLAST RADIUS",
       desc: "Static dependency blast radius estimator categorized into High, Medium, and Low potential impact tiers before merging PRs.",
       icon: ShieldAlert,
-      highlight: "Regression Prevention"
+      highlight: "Regression Prevention",
+      route: "impact"
     }
   ];
 
@@ -185,39 +191,46 @@ export default function LandingPage() {
 
           {/* Hero CTAs */}
           <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
-            <button
-              onClick={() => setConnectModalOpen(true)}
+            <Link
+              href={`/workspace/${recentRepos[0]?.id || 4}`}
               className="flex items-center space-x-2 px-7 py-3.5 rounded-full bg-[#f54e26] hover:bg-[#ff623d] text-white font-semibold text-sm shadow-[0_0_25px_rgba(245,78,38,0.4)] transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             >
-              <span>Index a Repository</span>
+              <Sparkles className="w-4 h-4 fill-white" />
+              <span>Launch Live Codebase Demo</span>
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Link>
 
-            <a
-              href="#preview"
+            <button
+              onClick={() => setConnectModalOpen(true)}
               className="flex items-center space-x-2 px-7 py-3.5 rounded-full bg-[#181818] hover:bg-[#202020] text-zinc-200 font-medium text-sm border border-[#2b2b2b] hover:border-zinc-500 transition-all cursor-pointer"
             >
-              <span>Explore Workspace Preview</span>
-            </a>
+              <GitBranch className="w-4 h-4 text-[#f54e26]" />
+              <span>Connect Any GitHub Repo</span>
+            </button>
           </div>
 
           {/* Pre-indexed Repos Quick Launch */}
           {recentRepos.length > 0 && (
-            <div className="pt-8 flex flex-wrap items-center justify-center gap-2.5 text-xs">
+            <div className="pt-8 flex flex-col items-center justify-center gap-3 text-xs">
               <span className="text-zinc-500 font-mono uppercase text-[11px] tracking-wider">
-                Direct Workspace Access:
+                Instant One-Click Workspace Demos:
               </span>
-              {recentRepos.slice(0, 3).map((r) => (
-                <Link
-                  key={r.id}
-                  href={`/workspace/${r.id}`}
-                  className="px-3.5 py-1.5 rounded-full bg-[#141414] border border-[#262626] hover:border-[#f54e26]/60 text-zinc-300 hover:text-white font-mono transition-all flex items-center space-x-1.5 group"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#f54e26]"></span>
-                  <span>{r.owner}/{r.name}</span>
-                  <ArrowUpRight className="w-3 h-3 text-zinc-500 group-hover:text-[#f54e26] transition-colors" />
-                </Link>
-              ))}
+              <div className="flex flex-wrap items-center justify-center gap-2.5">
+                {recentRepos.map((r) => (
+                  <Link
+                    key={r.id}
+                    href={`/workspace/${r.id}`}
+                    className="px-3.5 py-1.5 rounded-full bg-[#141414] border border-[#262626] hover:border-[#f54e26] text-zinc-300 hover:text-white font-mono transition-all flex items-center space-x-2 group shadow-sm hover:shadow-[0_0_15px_rgba(245,78,38,0.2)]"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-[#00a86b]"></span>
+                    <span className="font-semibold text-white">{r.owner}/{r.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#202020] text-zinc-400 border border-[#2e2e2e]">
+                      {r.primary_language || "Code"}
+                    </span>
+                    <ArrowUpRight className="w-3 h-3 text-zinc-500 group-hover:text-[#f54e26] transition-colors" />
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -336,6 +349,17 @@ export default function LandingPage() {
                   <p className="text-xs text-zinc-400 leading-relaxed font-sans max-w-lg mx-auto">
                     Organic D3 force-directed physics, directory clustering, satellite function nodes, and instant click-to-view source code modals.
                   </p>
+
+                  <div className="pt-2">
+                    <Link
+                      href={`/workspace/${recentRepos[0]?.id || 4}/architecture`}
+                      className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-full bg-[#f54e26] hover:bg-[#ff623d] text-white text-xs font-mono font-semibold transition-all shadow-md shadow-[#f54e26]/30 cursor-pointer"
+                    >
+                      <Orbit className="w-3.5 h-3.5" />
+                      <span>Launch 3D Constellation & 30s Guided Tour</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}
@@ -356,9 +380,18 @@ export default function LandingPage() {
                   <div className="text-zinc-300 leading-relaxed font-sans">
                     Authentication is initialized in <span className="font-mono text-[#f54e26] bg-[#1a1a1a] px-1.5 py-0.5 rounded border border-[#2a2a2a]">[src/middleware/auth.ts:24-48]</span>. Inbound requests pass through <span className="font-mono text-zinc-100">verifyBearerToken()</span> which validates the HMAC signature before attaching the user payload to the session context.
                   </div>
-                  <div className="flex items-center space-x-2 pt-2 border-t border-[#222222] text-[11px] text-[#00a86b] font-mono">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#00a86b]" />
-                    <span>Evidence grounded in 2 verified AST code excerpts</span>
+                  <div className="flex items-center justify-between pt-2 border-t border-[#222222] text-[11px] text-[#00a86b] font-mono">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#00a86b]" />
+                      <span>Evidence grounded in 2 verified AST code excerpts</span>
+                    </div>
+                    <Link
+                      href={`/workspace/${recentRepos[0]?.id || 4}/chat`}
+                      className="text-xs text-[#f54e26] hover:text-[#ff623d] flex items-center space-x-1 font-semibold"
+                    >
+                      <span>Open Live Chat</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -388,6 +421,17 @@ export default function LandingPage() {
                 <p className="text-xs text-zinc-400 max-w-md mx-auto">
                   Maps incoming callers and downstream function invocations to isolate breaking paths before refactoring.
                 </p>
+
+                <div className="pt-2">
+                  <Link
+                    href={`/workspace/${recentRepos[0]?.id || 4}/execution-path`}
+                    className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-full bg-[#181818] hover:bg-[#202020] border border-[#282828] hover:border-[#f54e26]/60 text-white text-xs font-mono font-semibold transition-all shadow-md cursor-pointer"
+                  >
+                    <GitFork className="w-3.5 h-3.5 text-[#f54e26]" />
+                    <span>Trace Call Graphs in Workspace</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               </div>
             )}
 
@@ -424,6 +468,17 @@ export default function LandingPage() {
                     </div>
                     <div className="text-[11px] text-zinc-400 font-sans pt-1">test/db.test.ts</div>
                   </div>
+                </div>
+
+                <div className="pt-2 text-center">
+                  <Link
+                    href={`/workspace/${recentRepos[0]?.id || 4}/impact`}
+                    className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-full bg-[#181818] hover:bg-[#202020] border border-[#282828] hover:border-[#f54e26]/60 text-white text-xs font-mono font-semibold transition-all shadow-md cursor-pointer"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5 text-[#f54e26]" />
+                    <span>Analyze Change Impact & Blast Radius</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
                 </div>
               </div>
             )}
@@ -497,11 +552,12 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {modules.map((m, idx) => {
             const Icon = m.icon;
+            const targetUrl = `/workspace/${recentRepos[0]?.id || 4}/${m.route}`;
             return (
-              <div
+              <Link
                 key={idx}
-                className="p-7 rounded-2xl bg-[#141414] border border-[#242424] hover:border-[#f54e26]/50 shadow-xl space-y-5 flex flex-col justify-between transition-all group hover:-translate-y-1 cursor-pointer"
-                onClick={() => setConnectModalOpen(true)}
+                href={targetUrl}
+                className="p-7 rounded-2xl bg-[#141414] border border-[#242424] hover:border-[#f54e26]/60 shadow-xl space-y-5 flex flex-col justify-between transition-all group hover:-translate-y-1 cursor-pointer block hover:shadow-[0_10px_30px_rgba(245,78,38,0.15)]"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -528,12 +584,12 @@ export default function LandingPage() {
 
                 <div className="pt-3 border-t border-[#1e1e1e] flex items-center justify-between text-xs font-mono">
                   <span className="text-zinc-500 text-[11px]">{m.highlight}</span>
-                  <div className="text-[#f54e26] flex items-center space-x-1 group-hover:translate-x-1 transition-transform">
-                    <span>Inspect</span>
+                  <div className="text-[#f54e26] flex items-center space-x-1 group-hover:translate-x-1 transition-transform font-semibold">
+                    <span>Launch</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

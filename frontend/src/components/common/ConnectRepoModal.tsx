@@ -35,10 +35,10 @@ export default function ConnectRepoModal({ isOpen, onClose, onSuccess }: Connect
 
   // Example public repos
   const sampleRepos = [
-    { name: "expressjs/express", desc: "Fast, unopinionated Node.js web framework" },
-    { name: "vasturiano/react-force-graph", desc: "Force-directed 2D/3D graphs component" },
-    { name: "pallets/flask", desc: "The Python micro framework for web apps" },
-    { name: "facebook/react", desc: "The library for web and native UIs" }
+    { name: "adhithyapandiri-a11y/AdiYogeeZ", desc: "RepoMind Flagship Codebase (AST + 3D Cosmos)" },
+    { name: "expressjs/express", desc: "Fast, unopinionated Node.js web framework (69k ⭐)" },
+    { name: "vasturiano/react-force-graph", desc: "Force-directed 2D/3D WebGL graph component" },
+    { name: "adhithyapandiri-a11y/getHalt", desc: "Android Kotlin wellness app with NFC encryption" }
   ];
 
   const handleSubmit = async (targetUrl?: string) => {

@@ -23,10 +23,11 @@ import { ChatMessage, Citation } from "@/lib/types";
 interface ChatInterfaceProps {
   repoId: number;
   repoName: string;
+  initialQuery?: string;
   onOpenCitation: (filePath: string, startLine: number, endLine: number) => void;
 }
 
-export default function ChatInterface({ repoId, repoName, onOpenCitation }: ChatInterfaceProps) {
+export default function ChatInterface({ repoId, repoName, initialQuery, onOpenCitation }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
@@ -37,6 +38,7 @@ export default function ChatInterface({ repoId, repoName, onOpenCitation }: Chat
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<number | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const initialQueryTriggered = useRef(false);
 
   const suggestedQuestions = [
     "Explain the overall architecture and main entry points.",
@@ -84,6 +86,14 @@ export default function ChatInterface({ repoId, repoName, onOpenCitation }: Chat
       setLoading(false);
     }
   };
+
+  // Automatically execute initialQuery if passed from dashboard
+  useEffect(() => {
+    if (initialQuery && initialQuery.trim() && !initialQueryTriggered.current) {
+      initialQueryTriggered.current = true;
+      handleSend(initialQuery);
+    }
+  }, [initialQuery]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -251,22 +261,41 @@ export default function ChatInterface({ repoId, repoName, onOpenCitation }: Chat
 
       {/* Input Form */}
       <div className="p-4 border-t border-[#222222] bg-[#0f0f0f]/95 shrink-0">
-        <div className="max-w-4xl mx-auto relative flex items-center">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask anything about the codebase (architecture, workflows, functions)..."
-            rows={2}
-            className="w-full resize-none rounded-2xl bg-[#141414] border border-[#282828] p-4 pr-16 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#f54e26] shadow-xl font-sans"
-          />
-          <button
-            onClick={() => handleSend()}
-            disabled={!input.trim() || loading}
-            className="absolute right-3.5 p-2.5 rounded-full bg-[#f54e26] hover:bg-[#ff623d] disabled:opacity-30 disabled:cursor-not-allowed text-white shadow-[0_0_15px_rgba(245,78,38,0.3)] transition-all cursor-pointer"
-          >
-            <Send className="w-4 h-4" />
-          </button>
+        <div className="max-w-4xl mx-auto space-y-2.5">
+          {/* Quick Query Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-[10px] font-mono text-zinc-500 shrink-0 font-semibold uppercase tracking-wider">
+              Prompt Ideas:
+            </span>
+            {suggestedQuestions.map((q, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSend(q)}
+                disabled={loading}
+                className="text-[11px] px-3 py-1 rounded-full bg-[#161616] hover:bg-[#202020] text-zinc-300 hover:text-white border border-[#262626] hover:border-[#f54e26]/50 shrink-0 transition-colors cursor-pointer disabled:opacity-40"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative flex items-center">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask anything about the codebase (architecture, workflows, functions)..."
+              rows={2}
+              className="w-full resize-none rounded-2xl bg-[#141414] border border-[#282828] p-4 pr-16 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#f54e26] shadow-xl font-sans"
+            />
+            <button
+              onClick={() => handleSend()}
+              disabled={!input.trim() || loading}
+              className="absolute right-3.5 p-2.5 rounded-full bg-[#f54e26] hover:bg-[#ff623d] disabled:opacity-30 disabled:cursor-not-allowed text-white shadow-[0_0_15px_rgba(245,78,38,0.3)] transition-all cursor-pointer"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         <div className="text-center text-[10px] font-mono text-zinc-500 mt-2">
           RepoMind AI grounds all reasoning in indexed AST symbols and vector code embeddings. Press Enter to send.

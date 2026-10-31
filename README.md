@@ -1,81 +1,76 @@
-# RepoMind
+# RepoMind 🧠⚡
 
 > **"Understand any codebase. Navigate any complexity."**
+> 
+> *A next-generation codebase intelligence platform featuring a 3D WebGL Obsidian Cosmos, 30-Second Automated Architectural Walkthrough, Grounded AST Reasoning, Static Call-Graph Tracing, and Blast Radius Estimation.*
 
-RepoMind is an intelligent codebase exploration and open-source contribution platform. It allows developers to connect any public GitHub repository and interact with its source code through AI-powered analysis, an Obsidian-style visual architecture exploration graph, function relationship mapping, commit history analysis, and contribution assistance.
+[![Next.js](https://img.shields.io/badge/Next.js-16_Turbopack-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Three.js](https://img.shields.io/badge/Three.js-3D_WebGL-black?style=flat&logo=three.js)](https://threejs.org/)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-2.5_Flash-4285F4?style=flat&logo=google)](https://ai.google.dev/)
+[![Design System](https://img.shields.io/badge/Design_System-VSK_Design-f54e26?style=flat)](https://vsk.design/)
 
 ---
 
-## 🌟 Key Features & Modules
+## 🏆 Hackathon Quick Links & Demo Walkthrough
 
-### 1. Repository Connection & Live 8-Stage Indexing Pipeline
-* Connect any public GitHub repository (e.g., `expressjs/express` or `https://github.com/facebook/react`).
-* Real-time indexing progress tracker:
-  1. Connecting to GitHub API & validating public access
-  2. Retrieving repository file tree & directory hierarchy
-  3. Language identification & source asset filtering
-  4. Parsing source code with Tree-sitter & AST engines
-  5. Extracting functions, methods, classes, and interfaces
-  6. Constructing cross-file dependency relationships & call sites
-  7. Generating 768-dimensional vector code embeddings via Gemini
-  8. Finalizing intelligence database and index
+RepoMind comes pre-indexed with flagship open-source repositories for instant, one-click demo evaluation:
 
-### 2. Main Dashboard & Codebase Overview
-* Comprehensive repository statistics: file counts, detected functions, detected classes, language breakdown, and internal dependency links.
-* Recent commit timeline and suggested architectural questions.
-* Quick-launch cards into all intelligence modules.
-* Instant multi-repository switcher dropdown.
+1. **`adhithyapandiri-a11y/AdiYogeeZ`** — *RepoMind exploring its own codebase in 3D WebGL!*
+2. **`expressjs/express`** (69.5k ⭐) — Fast, unopinionated web framework for Node.js.
+3. **`vasturiano/react-force-graph`** (3.3k ⭐) — 2D/3D WebGL force-directed graph component.
+4. **`adhithyapandiri-a11y/getHalt`** — Android Kotlin digital wellness application with NFC encryption.
 
-### 3. Module One: RepoMind Grounded AI
-* Natural-language conversational interface grounded strictly in indexed codebase excerpts.
-* **Evidence Grounding**: All answers cite exact file paths and line ranges (e.g., `[src/auth.ts:24-48]`).
-* Clickable citation badges that open the file directly in the embedded code viewer.
-* Honest uncertainty: If repository evidence is insufficient, it explicitly states so rather than hallucinating.
+---
 
-### 4. Module Two: Architecture Explorer (Obsidian Constellation + React Flow)
-* **Obsidian-Style Constellation Graph View**:
-  * Force-directed physics canvas floating in space (`#090d16`).
-  * **Directory Hubs**: Large glowing violet circles holding child modules together.
-  * **File Nodes**: Sized dynamically by connectivity (in-degree + out-degree) and colored by programming language.
-  * **Satellite Dots**: Orbiting function and class symbols.
-  * **Focus Highlighting**: Hovering over any node illuminates its connections and smoothly dims unrelated nodes (the classic Obsidian focus effect).
-  * Interactive pan, zoom, camera fly-to search, and language filters.
-* **Hierarchical Architecture Flow**:
-  * React Flow DAG categorizing components across system tiers (UI → API → Services → Models → Utils).
-* **Click-to-Inspect Drawer**:
-  * Detailed metadata, detected symbols, incoming/outgoing dependencies, and embedded code preview.
+## 🌟 Key Features & Specialized Intelligence Modules
 
-### 5. Module Three: Execution Path Explorer
-* Autocomplete search for functions and methods across the entire repository.
-* Traces incoming **Callers** (upstream invocations) and downstream **Callees** (internal function calls).
-* Visual sequential call chain: `Caller Layer → Target Function → Callee Layer → Downstream Services`.
-* Click any step in the flow to inspect the exact source code.
-* Transparent static analysis disclaimer distinguishing static symbol calls from dynamic runtime execution.
+### 1. 🌌 3D Obsidian Cosmos & 30-Second Guided Architectural Tour
+* **3D WebGL Force-Directed Cosmos** powered by `react-force-graph-3d` and Three.js SpriteText billboard labels.
+* **Cinematic 30-Second Guided Tour**:
+  - Automatically analyzes AST graph nodes to construct an automated 5-stage walkthrough.
+  - Stage 1: Entrypoint & Bootstrappers → Stage 2: Dispatch & Routing → Stage 3: Domain Logic → Stage 4: Persistence & Data Models → Stage 5: Full 3D Cosmos Zoom-Out.
+  - Smooth camera flight interpolation with floating storyteller progress bar, player controls (Pause, Resume, Next, Prev), and unobstructed view.
+* **3-Mode Architecture Explorer**:
+  - **Obsidian Cosmos**: 3D force-directed interactive galaxy.
+  - **Repository Map**: 2D pannable/zoomable directory containment map with path search.
+  - **Hierarchy**: GitDiagram system flowchart and layer organization.
 
-### 6. Module Four: Codebase Time Machine
-* Interactive GitHub commit history with author avatars, messages, and timestamps.
-* Real commit diff inspector displaying additions (`+`), deletions (`-`), and patch lines.
-* **AI Explain Commit**: One-click Gemini breakdown explaining the architectural purpose of the change, key modifications, and regression watchouts.
+### 2. 💬 RepoMind Grounded AI (Zero Hallucinations)
+* Conversational codebase intelligence strictly grounded in parsed AST code excerpts.
+* **Verified Citations**: Every claim cites verified file paths and exact line ranges (e.g., `[src/auth.ts:24-48]`).
+* Clickable citation badges open the file directly in the embedded high-contrast code viewer and scroll to the exact lines.
+* Preset one-click prompt pills for instant exploration: Architecture Overview, Key Entry Points, Auth Workflows, and Database Schemas.
 
-### 7. Module Five: Contribution Assistant
-* Fetches live open GitHub issues directly from the repository.
-* Custom feature or bug inquiry mode.
-* **Beginner-Friendly Mode Toggle**: Adjusts explanation complexity for first-time open-source contributors vs senior engineers.
-* Generates an actionable contribution roadmap:
-  - Issue summary & technical problem cause
-  - Target files to inspect and modify (with specific reasons)
-  - Step-by-step investigation procedures
-  - Implementation strategy
-  - Comprehensive testing checklist
-  - Potential regression risks
+### 3. 🌿 Inter-Function Execution Path Explorer
+* Multi-hop function caller and callee graph traversal.
+* Sequential call chains: `Callers → Target Symbol → Callees → Downstream Handlers`.
+* Click any step in the flow to inspect the exact source code lines.
 
-### 8. Module Six: Impact Analyzer
-* Input any proposed code change (e.g., *"I want to refactor the authentication middleware"*).
-* Statically computes dependency blast radius using graph traversal:
-  - **HIGH IMPACT**: Direct targets and immediate callers.
-  - **MEDIUM IMPACT**: Transitive 2nd-degree dependent files.
-  - **LOW IMPACT**: Peripheral configs, documentation, and test suites.
-* Explains why each file was flagged and provides a recommended test plan.
+### 4. ⏳ Codebase Time Machine
+* Interactive GitHub commit timeline with author details, timestamps, and commit hashes.
+* Full diff inspector displaying additions (`+`), deletions (`-`), and patch lines.
+* **AI Commit Breakdown**: One-click Gemini explanation breaking down architectural intent, modifications, and regression watchouts.
+
+### 5. 🎯 Open-Source Contribution Assistant
+* Analyzes live GitHub issues and formulates step-by-step contribution roadmaps.
+* **AST Isolation Score**: Evaluates if a file is a safe leaf node or a high-risk hub before beginners start editing.
+* **Draft Git Patch**: Auto-generates starter code patches to accelerate bug fixes.
+* **Beginner-Friendly Mode Toggle**: Adjusts explanation complexity for novice contributors vs senior engineers.
+
+### 6. 🛡️ Impact Analyzer (Static Blast Radius Estimation)
+* Predicts regression risks before touching source code.
+* Categorizes files into **High**, **Medium**, and **Low** impact tiers based on graph traversal of callers and dependencies.
+* Delivers recommended test plans and critical watchouts.
+
+---
+
+## 🎨 Editorial VSK Design System
+
+RepoMind features an editorial visual design inspired by [VSK Design](https://vsk.design/):
+* High-contrast dark foundation (`#0d0d0d`, `#141414`, `#181818`) with safety orange `#f54e26`, amber `#f9bf28`, and emerald `#00a86b`.
+* Subtle technical dot matrix grid backgrounds and animated marquee ticker ribbons.
+* Bento grid layouts with micro-interactions, spring-physics hover animations, and tab-focus indicators (`⚡ Bet that tab isn't as cool.`).
 
 ---
 
@@ -83,21 +78,42 @@ RepoMind is an intelligent codebase exploration and open-source contribution pla
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Frontend** | Next.js 14+ (App Router), React, TypeScript, Tailwind CSS, Lucide Icons, `@xyflow/react` (React Flow), D3-Force Canvas |
+| **Frontend** | Next.js 16 (App Router + Turbopack), React 19, TypeScript, Tailwind CSS, Three.js, `react-force-graph-3d`, Three-SpriteText, `@xyflow/react` |
 | **Backend** | Python 3.12+, FastAPI, Uvicorn, SQLAlchemy (Async), aiosqlite, NetworkX, HTTPX |
 | **Code Parsing** | Multi-Language AST Parser, Tree-sitter, Regex Tokenizers |
 | **AI & Embeddings** | Google Gemini 2.5 Flash (`gemini-2.5-flash`), Gemini Embeddings (`models/gemini-embedding-001`), Hybrid Vector + BM25 Search |
-| **Database** | SQLite with Async I/O (easily upgradeable to PostgreSQL) |
+| **Database** | SQLite with Async I/O |
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quickstart Guide
 
-### Prerequisites
-* Node.js v18+ and npm
-* Python 3.10+
-* Google Gemini API Key
-* GitHub Personal Access Token (for 5,000 requests/hr rate limit)
+### 1. Clone & Set Up Environment Variables
+Create `backend/.env`:
+```bash
+GEMINI_API_KEY=your_gemini_api_key_here
+GITHUB_TOKEN=your_github_token_here
+DATABASE_URL=sqlite+aiosqlite:///./repomind.db
+PORT=8000
+```
+
+### 2. Backend Server
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r backend/requirements.txt
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+* API Server: `http://localhost:8000`
+* Interactive API Docs: `http://localhost:8000/docs`
+
+### 3. Frontend Web App
+```bash
+cd frontend
+npm install
+npm run dev
+```
+* Web App: `http://localhost:3000`
 
 ### 1. Clone & Set Up Environment Variables
 Create `backend/.env` with your credentials:

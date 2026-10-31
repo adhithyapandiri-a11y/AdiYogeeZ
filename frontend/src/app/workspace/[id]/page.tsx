@@ -39,7 +39,7 @@ function DashboardContent() {
     <DashboardOverview
       repo={repo}
       onSelectQuestion={(q) => {
-        router.push(`/workspace/${repoId}/chat`);
+        router.push(`/workspace/${repoId}/chat?q=${encodeURIComponent(q)}`);
       }}
     />
   );
