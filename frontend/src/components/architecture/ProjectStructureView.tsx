@@ -107,13 +107,13 @@ export function ProjectStructureView({
       theme: "dark",
       themeVariables: {
         darkMode: true,
-        background: "#090d16",
-        primaryColor: "#4f46e5",
-        primaryBorderColor: "#6366f1",
-        primaryTextColor: "#f8fafc",
-        lineColor: "#475569",
-        secondaryColor: "#0f172a",
-        tertiaryColor: "#1e293b",
+        background: "#0d0d0d",
+        primaryColor: "#f54e26",
+        primaryBorderColor: "#f54e26",
+        primaryTextColor: "#f4f4f5",
+        lineColor: "#3f3f46",
+        secondaryColor: "#141414",
+        tertiaryColor: "#181818",
         fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
         fontSize: "12px",
       },
@@ -499,19 +499,19 @@ export function ProjectStructureView({
   );
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-[#090d16] overflow-hidden select-none">
+    <div className="relative w-full h-full flex flex-col bg-[#0d0d0d] overflow-hidden select-none">
       {/* Top GitDiagram Action Bar */}
-      <div className="z-10 bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-2 flex flex-wrap items-center justify-between gap-3">
+      <div className="z-10 bg-[#121212] backdrop-blur-md border-b border-[#222222] px-4 py-2 flex flex-wrap items-center justify-between gap-3">
         {/* Left: Mode Switcher & Scope Filter */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* GitDiagram Mode Tabs */}
-          <div className="flex items-center bg-slate-950/80 p-0.5 rounded-lg border border-slate-800 font-mono text-xs">
+          <div className="flex items-center bg-[#181818] p-1 rounded-full border border-[#282828] font-mono text-xs">
             <button
               onClick={() => setPresentationMode("diagram")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
                 presentationMode === "diagram"
-                  ? "bg-indigo-600 text-white font-semibold shadow-sm"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-[#f54e26] text-white font-semibold shadow-sm"
+                  : "text-zinc-400 hover:text-white"
               }`}
             >
               <GitFork className="w-3.5 h-3.5" />
@@ -520,10 +520,10 @@ export function ProjectStructureView({
 
             <button
               onClick={() => setPresentationMode("canvas")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
                 presentationMode === "canvas"
-                  ? "bg-indigo-600 text-white font-semibold shadow-sm"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-[#f54e26] text-white font-semibold shadow-sm"
+                  : "text-zinc-400 hover:text-white"
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
@@ -532,10 +532,10 @@ export function ProjectStructureView({
 
             <button
               onClick={() => setPresentationMode("code")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
                 presentationMode === "code"
-                  ? "bg-indigo-600 text-white font-semibold shadow-sm"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-[#f54e26] text-white font-semibold shadow-sm"
+                  : "text-zinc-400 hover:text-white"
               }`}
             >
               <Code2 className="w-3.5 h-3.5" />
@@ -545,8 +545,8 @@ export function ProjectStructureView({
 
           {/* Directory Scope Filter */}
           {topLevelFolders.length > 0 && (
-            <div className="flex items-center gap-1.5 text-xs font-mono bg-slate-950/80 px-2.5 py-1 rounded-lg border border-slate-800 text-slate-300">
-              <Filter className="w-3.5 h-3.5 text-indigo-400" />
+            <div className="flex items-center gap-1.5 text-xs font-mono bg-[#181818] px-3 py-1 rounded-full border border-[#282828] text-zinc-300">
+              <Filter className="w-3.5 h-3.5 text-[#f54e26]" />
               <select
                 value={folderScope}
                 onChange={(e) => setFolderScope(e.target.value)}
@@ -752,21 +752,21 @@ export function ProjectStructureView({
                 fitViewOptions={{ padding: 0.15 }}
                 minZoom={0.1}
                 maxZoom={2.0}
-                className="bg-[#090d16]"
+                className="bg-[#0d0d0d]"
                 proOptions={{ hideAttribution: true }}
               >
-                <Background color="#1e293b" gap={24} size={1} />
-                <Controls className="!bg-slate-900 !border-slate-800 !fill-slate-300 !rounded-xl !shadow-xl !overflow-hidden" />
+                <Background color="#242424" gap={24} size={1} />
+                <Controls className="!bg-[#141414] !border-[#262626] !fill-zinc-300 !rounded-xl !shadow-xl !overflow-hidden" />
               </ReactFlow>
             )}
 
             {/* MODE 3: Raw Mermaid Code (GitDiagram Format with Line Numbers & One-Click Copy) */}
             {presentationMode === "code" && (
-              <div className="w-full h-full flex flex-col bg-[#070b12] text-slate-200 font-mono text-xs overflow-hidden">
+              <div className="w-full h-full flex flex-col bg-[#0d0d0d] text-zinc-200 font-mono text-xs overflow-hidden">
                 {/* Code View Top Bar */}
-                <div className="bg-slate-950 px-4 py-2 border-b border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[11px] text-indigo-300">
+                <div className="bg-[#141414] px-4 py-2 border-b border-[#262626] flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-zinc-400">
+                    <span className="px-2 py-0.5 rounded-full bg-[#1c1c1c] border border-[#2e2e2e] text-[11px] text-[#f54e26]">
                       architecture.mmd
                     </span>
                     <span>{mermaidCode.split("\n").length} lines</span>

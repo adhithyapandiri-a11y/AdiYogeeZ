@@ -98,23 +98,23 @@ export default function CodeViewerModal({
           }
         }
       }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200"
     >
       <div
-        className="w-full max-w-5xl h-[85vh] bg-[#0c121e] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        className="w-full max-w-5xl h-[85vh] bg-[#141414] border border-[#2a2a2a] rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="h-14 px-5 border-b border-white/10 bg-[#0f172a]/90 flex items-center justify-between shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+        <div className="h-16 px-6 border-b border-[#242424] bg-[#181818] flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-8 h-8 rounded-full bg-[#1c1c1c] border border-[#2c2c2c] flex items-center justify-center text-[#f54e26]">
               <FileCode className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-slate-100 flex items-center space-x-2">
+              <div className="text-sm font-bold font-mono text-white flex items-center space-x-2">
                 <span>{filePath}</span>
                 {targetLineStart && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 font-mono">
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#f54e26]/10 text-[#f54e26] border border-[#f54e26]/30 font-mono">
                     L{targetLineStart}
                     {targetLineEnd && targetLineEnd !== targetLineStart
                       ? `-${targetLineEnd}`
@@ -122,31 +122,31 @@ export default function CodeViewerModal({
                   </span>
                 )}
               </div>
-              <div className="text-[11px] text-slate-400">
+              <div className="text-[11px] font-mono text-zinc-400">
                 {data
                   ? `${data.language} • ${data.line_count} lines • ${data.symbols.length} detected symbols`
-                  : "Loading..."}
+                  : "Loading AST symbols..."}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2.5">
             <button
               onClick={handleCopy}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-white/5 transition-colors"
+              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-[#202020] hover:bg-[#282828] text-xs font-mono font-medium text-zinc-300 border border-[#2e2e2e] transition-colors cursor-pointer"
             >
               {copied ? (
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <Check className="w-3.5 h-3.5 text-[#00a86b]" />
               ) : (
-                <Copy className="w-3.5 h-3.5 text-slate-400" />
+                <Copy className="w-3.5 h-3.5 text-zinc-400" />
               )}
-              <span>{copied ? "Copied" : "Copy Code"}</span>
+              <span>{copied ? "Copied" : "Copy Source"}</span>
             </button>
             <button
               onClick={onClose}
               aria-label="Close source viewer"
               ref={closeRef}
-              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+              className="p-2 rounded-full hover:bg-[#202020] text-zinc-400 hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -154,26 +154,26 @@ export default function CodeViewerModal({
         </div>
 
         {/* Code Content Body */}
-        <div className="flex-1 overflow-auto bg-[#090d16] font-mono text-xs">
+        <div className="flex-1 overflow-auto bg-[#0d0d0d] font-mono text-xs">
           {error ? (
-            <div role="alert" className="space-y-3 p-6 text-rose-300">
+            <div role="alert" className="space-y-3 p-8 text-[#ff623d]">
               <p>{error}</p>
               <button
-                className="rounded border border-slate-700 px-3 py-2 text-xs text-slate-200"
+                className="rounded-full border border-zinc-700 px-4 py-2 text-xs text-zinc-200 hover:border-zinc-500"
                 onClick={() => setRetry((n) => n + 1)}
               >
                 Retry source
               </button>
             </div>
           ) : loading ? (
-            <div className="h-full flex items-center justify-center text-slate-400">
-              <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
-                <span>Retrieving source file...</span>
+            <div className="h-full flex items-center justify-center text-zinc-400 font-mono text-xs">
+              <div className="flex items-center space-x-2.5">
+                <span className="w-2 h-2 rounded-full bg-[#f54e26] animate-ping"></span>
+                <span>Retrieving source file excerpts...</span>
               </div>
             </div>
           ) : (
-            <div className="py-3">
+            <div className="py-4">
               {lines.map((line, idx) => {
                 const lineNo = idx + 1;
                 const isTarget =
@@ -184,13 +184,13 @@ export default function CodeViewerModal({
                 return (
                   <div
                     key={idx}
-                    className={`flex items-start px-4 py-0.5 transition-colors ${
+                    className={`flex items-start px-6 py-0.5 transition-colors ${
                       isTarget
-                        ? "bg-indigo-600/20 border-l-2 border-indigo-400 text-indigo-100"
-                        : "hover:bg-slate-800/30 text-slate-300"
+                        ? "bg-[#f54e26]/15 border-l-2 border-[#f54e26] text-white"
+                        : "hover:bg-[#161616] text-zinc-300"
                     }`}
                   >
-                    <span className="w-12 shrink-0 select-none text-slate-600 text-right pr-4">
+                    <span className="w-12 shrink-0 select-none text-zinc-600 text-right pr-4 font-mono">
                       {lineNo}
                     </span>
                     <pre className="whitespace-pre overflow-x-auto font-mono flex-1 leading-relaxed">
@@ -205,19 +205,20 @@ export default function CodeViewerModal({
 
         {/* Footer with detected symbols */}
         {data && data.symbols.length > 0 && (
-          <div className="h-10 px-4 border-t border-white/10 bg-[#0f172a]/80 flex items-center space-x-2 overflow-x-auto text-[11px] text-slate-400 shrink-0">
-            <span className="text-slate-500 uppercase font-semibold text-[10px] tracking-wider shrink-0">
-              Symbols:
+          <div className="h-12 px-6 border-t border-[#222222] bg-[#141414] flex items-center space-x-2.5 overflow-x-auto text-[11px] font-mono text-zinc-400 shrink-0">
+            <span className="text-zinc-500 uppercase font-semibold text-[10px] tracking-wider shrink-0">
+              AST SYMBOLS:
             </span>
             {data.symbols.map((sym, i) => (
               <span
                 key={i}
-                className="px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-white/5 whitespace-nowrap shrink-0"
+                className="px-2.5 py-1 rounded-full bg-[#1c1c1c] text-zinc-300 border border-[#2b2b2b] whitespace-nowrap shrink-0 flex items-center space-x-1"
               >
-                <span className="text-indigo-400 font-mono">
+                <span className="text-[#f54e26]">
                   {sym.symbol_type}:
                 </span>{" "}
-                {sym.name} (L{sym.start_line})
+                <span className="text-white font-medium">{sym.name}</span>
+                <span className="text-zinc-500">(L{sym.start_line})</span>
               </span>
             ))}
           </div>

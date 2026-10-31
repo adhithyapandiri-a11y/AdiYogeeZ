@@ -29,7 +29,7 @@ function WorkspaceInner({ children }: { children: React.ReactNode }) {
   }, [repoId]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#090d16] text-slate-100">
+    <div className="min-h-screen flex flex-col bg-[#0d0d0d] text-zinc-100 vsk-grid-bg-subtle">
       {/* Navbar */}
       <Navbar
         currentRepo={repo}
@@ -70,7 +70,7 @@ export default function WorkspaceLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#090d16] flex items-center justify-center text-xs text-slate-500">Loading RepoMind Workspace...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center font-mono text-xs text-zinc-500">Loading RepoMind Workspace...</div>}>
       <WorkspaceInner>{children}</WorkspaceInner>
     </Suspense>
   );

@@ -76,23 +76,23 @@ export default function NodeDetailsDrawer({
     <div
       role="complementary"
       aria-label="File inspector"
-      className="absolute top-0 right-0 h-full w-[400px] max-w-full z-30 bg-slate-950/95 border-l border-slate-800/90 backdrop-blur-2xl shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+      className="absolute top-0 right-0 h-full w-[420px] max-w-full z-30 bg-[#121212]/95 border-l border-[#242424] backdrop-blur-2xl shadow-2xl flex flex-col animate-in slide-in-from-right duration-200 select-none"
     >
       {/* Header */}
-      <div className="p-4 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-slate-900/60">
-        <div className="flex items-center space-x-2.5 truncate">
-          <div className="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+      <div className="p-4 border-b border-[#242424] flex items-center justify-between shrink-0 bg-[#161616]">
+        <div className="flex items-center space-x-3 truncate">
+          <div className="p-2 rounded-full bg-[#1c1c1c] text-[#f54e26] border border-[#2a2a2a]">
             {details?.is_directory ? (
-              <Folder className="w-4 h-4 shrink-0 text-indigo-300" />
+              <Folder className="w-4 h-4 shrink-0 text-[#f54e26]" />
             ) : (
-              <FileCode className="w-4 h-4 shrink-0" />
+              <FileCode className="w-4 h-4 shrink-0 text-[#f54e26]" />
             )}
           </div>
           <div className="truncate">
-            <span className="font-semibold text-sm text-slate-100 truncate block font-mono">
+            <span className="font-bold text-sm text-white truncate block font-mono">
               {filePath.split("/").pop()}
             </span>
-            <span className="text-[10px] text-slate-400 truncate block font-mono">
+            <span className="text-[10px] text-zinc-400 truncate block font-mono">
               {filePath}
             </span>
           </div>
@@ -100,27 +100,27 @@ export default function NodeDetailsDrawer({
         <button
           onClick={onClose}
           aria-label="Close file inspector"
-          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+          className="p-1.5 rounded-full hover:bg-[#202020] text-zinc-400 hover:text-white transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+      <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs font-mono">
         {error ? (
-          <div role="alert" className="space-y-3 p-4 text-sm text-rose-300">
+          <div role="alert" className="space-y-3 p-4 text-xs text-[#ff623d]">
             <p>{error}</p>
             <button
-              className="rounded border border-slate-700 px-3 py-2 text-xs text-slate-200"
+              className="rounded-full border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:border-zinc-500"
               onClick={() => setRetry((n) => n + 1)}
             >
               Retry file details
             </button>
           </div>
         ) : loading || !details ? (
-          <div className="h-40 flex items-center justify-center text-slate-400">
-            <span className="font-mono text-xs">
+          <div className="h-40 flex items-center justify-center text-zinc-500">
+            <span className="text-xs">
               Loading node architecture details...
             </span>
           </div>
@@ -129,15 +129,15 @@ export default function NodeDetailsDrawer({
             {/* Metadata & Architectural Role */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">
+                <span className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider">
                   Classification
                 </span>
                 <button
                   onClick={copyPath}
-                  className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-indigo-400 transition-colors"
+                  className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-[#f54e26] transition-colors cursor-pointer"
                 >
                   {copied ? (
-                    <Check className="w-3 h-3 text-emerald-400" />
+                    <Check className="w-3 h-3 text-[#00a86b]" />
                   ) : (
                     <Copy className="w-3 h-3" />
                   )}
@@ -145,17 +145,17 @@ export default function NodeDetailsDrawer({
                 </button>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+              <div className="p-3 rounded-2xl bg-[#181818] border border-[#282828] space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-zinc-400">
                     Architectural Role:
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 font-mono border border-indigo-500/30 font-semibold">
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#1c1c1c] text-[#f54e26] border border-[#2a2a2a] font-bold">
                     {details.architectural_role || "Unknown"}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/60 font-mono">
+                <div className="flex items-center justify-between text-[11px] text-zinc-400 pt-1.5 border-t border-[#222222]">
                   <span>{details.language}</span>
                   <span>{details.line_count} lines</span>
                   <span>{Math.round(details.file_size / 1024)} KB</span>
@@ -166,27 +166,27 @@ export default function NodeDetailsDrawer({
             {/* Contained Files for Directory Hub */}
             {details.contained_files && details.contained_files.length > 0 && (
               <div className="space-y-1.5">
-                <div className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider flex items-center justify-between">
+                <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Folder className="w-3.5 h-3.5 text-indigo-400" />
+                    <Folder className="w-3.5 h-3.5 text-[#f54e26]" />
                     <span>Files in Directory</span>
                   </span>
-                  <span className="text-slate-400 font-mono font-normal">
+                  <span className="text-zinc-500 font-normal">
                     ({details.contained_files.length})
                   </span>
                 </div>
-                <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
                   {details.contained_files.map((file, idx) => (
                     <div
                       key={idx}
                       onClick={() => onSelectRelatedFile && onSelectRelatedFile(file.file_path)}
-                      className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-slate-900 cursor-pointer text-slate-300 font-mono text-[11px] group transition-all"
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#181818] border border-[#282828] hover:border-[#f54e26]/50 hover:bg-[#202020] cursor-pointer text-zinc-300 text-[11px] group transition-all"
                     >
                       <div className="flex items-center space-x-2 truncate">
-                        <FileCode className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                        <span className="truncate group-hover:text-indigo-300">{file.name}</span>
+                        <FileCode className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#f54e26] shrink-0" />
+                        <span className="truncate group-hover:text-white">{file.name}</span>
                       </div>
-                      <span className="text-[10px] text-slate-500 shrink-0 font-mono">{file.lines} lines</span>
+                      <span className="text-[10px] text-zinc-500 shrink-0">{file.lines} lines</span>
                     </div>
                   ))}
                 </div>
@@ -196,23 +196,23 @@ export default function NodeDetailsDrawer({
             {/* Functions Detected */}
             {details.functions.length > 0 && (
               <div className="space-y-1.5">
-                <div className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider flex items-center justify-between">
+                <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Code className="w-3.5 h-3.5 text-sky-400" />
+                    <Code className="w-3.5 h-3.5 text-[#f9bf28]" />
                     <span>Functions & Methods</span>
                   </span>
-                  <span className="text-slate-400 font-mono font-normal">
+                  <span className="text-zinc-500 font-normal">
                     ({details.functions.length})
                   </span>
                 </div>
-                <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                   {details.functions.map((fn, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-800/80 text-slate-300 font-mono text-[11px]"
+                      className="flex items-center justify-between p-2 rounded-xl bg-[#181818] border border-[#282828] text-zinc-300 text-[11px]"
                     >
-                      <span className="truncate text-sky-300">{fn.name}()</span>
-                      <span className="text-[10px] text-slate-500">
+                      <span className="truncate text-white">{fn.name}()</span>
+                      <span className="text-[10px] text-zinc-500">
                         L{fn.lines}
                       </span>
                     </div>
@@ -224,25 +224,25 @@ export default function NodeDetailsDrawer({
             {/* Classes Detected */}
             {details.classes.length > 0 && (
               <div className="space-y-1.5">
-                <div className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider flex items-center justify-between">
+                <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Box className="w-3.5 h-3.5 text-violet-400" />
+                    <Box className="w-3.5 h-3.5 text-[#f54e26]" />
                     <span>Classes & Interfaces</span>
                   </span>
-                  <span className="text-slate-400 font-mono font-normal">
+                  <span className="text-zinc-500 font-normal">
                     ({details.classes.length})
                   </span>
                 </div>
-                <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
                   {details.classes.map((cls, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/60 border border-slate-800/80 text-slate-300 font-mono text-[11px]"
+                      className="flex items-center justify-between p-2 rounded-xl bg-[#181818] border border-[#282828] text-zinc-300 text-[11px]"
                     >
-                      <span className="truncate text-violet-300">
+                      <span className="truncate text-white">
                         {cls.name}
                       </span>
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-[10px] text-zinc-500">
                         L{cls.lines}
                       </span>
                     </div>
@@ -253,21 +253,21 @@ export default function NodeDetailsDrawer({
 
             {/* Incoming Dependencies (Imported By) */}
             <div className="space-y-1.5">
-              <div className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider flex items-center justify-between">
+              <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-400" />
+                  <ArrowDownLeft className="w-3.5 h-3.5 text-[#00a86b]" />
                   <span>Imported By</span>
                 </span>
-                <span className="text-slate-400 font-mono font-normal">
+                <span className="text-zinc-500 font-normal">
                   ({details.incoming_dependencies.length})
                 </span>
               </div>
               {details.incoming_dependencies.length === 0 ? (
-                <div className="text-slate-500 italic text-[11px] p-2 bg-slate-900/40 rounded-lg border border-slate-800/50">
+                <div className="text-zinc-500 italic text-[11px] p-2.5 bg-[#181818] rounded-xl border border-[#242424]">
                   No incoming imports detected.
                 </div>
               ) : (
-                <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
                   {details.incoming_dependencies.map((dep, i) => {
                     const path = typeof dep === "string" ? dep : dep.file_path;
                     const rel =
@@ -282,17 +282,17 @@ export default function NodeDetailsDrawer({
                         onClick={() =>
                           onSelectRelatedFile && onSelectRelatedFile(path)
                         }
-                        className="text-slate-300 bg-slate-900/60 px-2 py-1.5 rounded-lg truncate border border-slate-800/80 hover:border-indigo-500/50 hover:bg-slate-900 cursor-pointer flex items-center justify-between text-[11px] font-mono group"
+                        className="text-zinc-300 bg-[#181818] px-3 py-2 rounded-xl truncate border border-[#282828] hover:border-[#f54e26]/50 hover:bg-[#202020] cursor-pointer flex items-center justify-between text-[11px] group transition-all"
                       >
-                        <span className="truncate group-hover:text-indigo-300">
+                        <span className="truncate group-hover:text-white">
                           {path}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-950/70 text-indigo-300 border border-indigo-800/40">
+                          <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#1c1c1c] text-[#f54e26] border border-[#2e2e2e]">
                             {rel}
                           </span>
                           {line && (
-                            <span className="text-[9px] text-slate-500">
+                            <span className="text-[9px] text-zinc-500">
                               L{line}
                             </span>
                           )}
@@ -306,21 +306,21 @@ export default function NodeDetailsDrawer({
 
             {/* Outgoing Dependencies (Imports) */}
             <div className="space-y-1.5">
-              <div className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider flex items-center justify-between">
+              <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <ArrowUpRight className="w-3.5 h-3.5 text-indigo-400" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[#f54e26]" />
                   <span>Imports</span>
                 </span>
-                <span className="text-slate-400 font-mono font-normal">
+                <span className="text-zinc-500 font-normal">
                   ({details.outgoing_dependencies.length})
                 </span>
               </div>
               {details.outgoing_dependencies.length === 0 ? (
-                <div className="text-slate-500 italic text-[11px] p-2 bg-slate-900/40 rounded-lg border border-slate-800/50">
+                <div className="text-zinc-500 italic text-[11px] p-2.5 bg-[#181818] rounded-xl border border-[#242424]">
                   No outgoing dependencies.
                 </div>
               ) : (
-                <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
                   {details.outgoing_dependencies.map((dep, i) => {
                     const path = typeof dep === "string" ? dep : dep.file_path;
                     const rel =
@@ -335,17 +335,17 @@ export default function NodeDetailsDrawer({
                         onClick={() =>
                           onSelectRelatedFile && onSelectRelatedFile(path)
                         }
-                        className="text-slate-300 bg-slate-900/60 px-2 py-1.5 rounded-lg truncate border border-slate-800/80 hover:border-indigo-500/50 hover:bg-slate-900 cursor-pointer flex items-center justify-between text-[11px] font-mono group"
+                        className="text-zinc-300 bg-[#181818] px-3 py-2 rounded-xl truncate border border-[#282828] hover:border-[#f54e26]/50 hover:bg-[#202020] cursor-pointer flex items-center justify-between text-[11px] group transition-all"
                       >
-                        <span className="truncate group-hover:text-indigo-300">
+                        <span className="truncate group-hover:text-white">
                           {path}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-950/70 text-indigo-300 border border-indigo-800/40">
+                          <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#1c1c1c] text-[#f54e26] border border-[#2e2e2e]">
                             {rel}
                           </span>
                           {line && (
-                            <span className="text-[9px] text-slate-500">
+                            <span className="text-[9px] text-zinc-500">
                               L{line}
                             </span>
                           )}
@@ -359,10 +359,10 @@ export default function NodeDetailsDrawer({
 
             {/* Source Code Preview */}
             <div className="space-y-1.5 pt-1">
-              <div className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">
+              <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider">
                 Code Preview
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] max-h-48 overflow-y-auto leading-relaxed text-slate-300 whitespace-pre">
+              <div className="p-3 rounded-2xl bg-[#0d0d0d] border border-[#222222] text-[11px] max-h-48 overflow-y-auto leading-relaxed text-zinc-300 whitespace-pre">
                 {details.preview}
               </div>
             </div>
@@ -371,7 +371,7 @@ export default function NodeDetailsDrawer({
       </div>
 
       {/* Footer action */}
-      <div className="p-3 border-t border-slate-800 bg-slate-950/80 shrink-0">
+      <div className="p-4 border-t border-[#242424] bg-[#161616] shrink-0">
         <button
           onClick={() => {
             const targetPath = (details?.is_directory && details.contained_files && details.contained_files.length > 0)
@@ -379,10 +379,10 @@ export default function NodeDetailsDrawer({
               : filePath;
             onOpenFullCode(targetPath);
           }}
-          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+          className="w-full py-3 px-4 rounded-full bg-[#f54e26] hover:bg-[#ff623d] text-white font-mono font-semibold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-[#f54e26]/20 transition-all cursor-pointer"
         >
           <ExternalLink className="w-3.5 h-3.5" />
-          <span>{details?.is_directory ? "Inspect Directory in Code Viewer" : "Open in Full Code Viewer"}</span>
+          <span>{details?.is_directory ? "Inspect Directory Source" : "Open in Full Code Viewer"}</span>
         </button>
       </div>
     </div>

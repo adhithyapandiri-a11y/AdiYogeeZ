@@ -33,8 +33,8 @@ import { ObsidianGraphData, ObsidianNode, ObsidianLink } from "@/lib/types";
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-[#090d16] text-slate-400 font-mono text-xs">
-      <div className="w-8 h-8 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin" />
+    <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-[#0d0d0d] text-zinc-400 font-mono text-xs">
+      <div className="w-8 h-8 rounded-full border-2 border-[#f54e26]/30 border-t-[#f54e26] animate-spin" />
       <span>Initializing 3D WebGL Cosmos engine (react-force-graph)...</span>
     </div>
   ),
@@ -44,6 +44,7 @@ interface ObsidianGraphProps {
   data: ObsidianGraphData;
   onSelectNode: (node: ObsidianNode) => void;
   selectedFilePath?: string | null;
+  onTourActiveChange?: (active: boolean) => void;
 }
 
 export interface TourStep {
@@ -62,6 +63,7 @@ export default function ObsidianConstellationGraph({
   data,
   onSelectNode,
   selectedFilePath,
+  onTourActiveChange,
 }: ObsidianGraphProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fgRef = useRef<any>(null);
@@ -280,7 +282,7 @@ export default function ObsidianConstellationGraph({
     if (!fgRef.current) return;
 
     if (step.targetNodeId) {
-      const targetNode = graphData.nodes.find((n) => n.id === step.targetNodeId);
+      const targetNode = graphData.nodes.find((n) => n.id === step.targetNodeId) as any;
       if (targetNode && targetNode.x !== undefined && targetNode.y !== undefined && targetNode.z !== undefined) {
         const distance = step.distance || 170;
         const hyp = Math.hypot(targetNode.x, targetNode.y, targetNode.z) || 1;
@@ -290,20 +292,21 @@ export default function ObsidianConstellationGraph({
           targetNode,
           1500
         );
-        onSelectNode(targetNode as ObsidianNode);
+        // Do not call onSelectNode here during guided cam so template drawer doesn't block map view
         return;
       }
     }
 
     // Default overview camera fly-back
     fgRef.current.cameraPosition({ x: 0, y: 0, z: 900 }, { x: 0, y: 0, z: 0 }, 1500);
-  }, [tourSteps, graphData.nodes, onSelectNode]);
+  }, [tourSteps, graphData.nodes]);
 
   // Tour Controller: Start Guided Tour
   const startGuidedTour = () => {
     setIsTourActive(true);
     setIsTourPaused(false);
     setAutoRotate(false);
+    onTourActiveChange?.(true);
     navigateToTourStep(0);
   };
 
@@ -314,6 +317,7 @@ export default function ObsidianConstellationGraph({
     setTourProgress(0);
     if (tourIntervalRef.current) clearTimeout(tourIntervalRef.current);
     if (tourProgressRef.current) clearInterval(tourProgressRef.current);
+    onTourActiveChange?.(false);
 
     if (fgRef.current) {
       fgRef.current.cameraPosition({ x: 0, y: 0, z: 900 }, { x: 0, y: 0, z: 0 }, 1200);
@@ -472,7 +476,7 @@ export default function ObsidianConstellationGraph({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-[#090d16] overflow-hidden select-none"
+      className="relative w-full h-full bg-[#0d0d0d] overflow-hidden select-none"
     >
       {/* 3D Force-Directed Graph WebGL Canvas */}
       <ForceGraph3D
@@ -484,20 +488,20 @@ export default function ObsidianConstellationGraph({
         nodeVal="val"
         nodeColor={(node: any) =>
           isTourActive && currentStep?.targetNodeId === node.id
-            ? "#38bdf8"
-            : node.color || "#6366f1"
+            ? "#f54e26"
+            : node.color || "#f54e26"
         }
         nodeOpacity={0.92}
         nodeResolution={16}
         nodeThreeObject={handleNodeThreeObject as any}
         nodeThreeObjectExtend={true}
         nodeLabel={(node: any) => `
-          <div style="background: rgba(15, 23, 42, 0.95); padding: 8px 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; font-family: ui-monospace, monospace; font-size: 11px; color: #f8fafc; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <div style="font-weight: bold; color: ${node.color || '#818cf8'}; font-size: 12px;">${node.name}</div>
-            <div style="color: #94a3b8; font-size: 10px; margin-top: 2px;">${node.type?.toUpperCase()} • ${node.path}</div>
-            ${node.language ? `<div style="color: #38bdf8; font-size: 10px; margin-top: 2px;">Language: ${node.language}</div>` : ""}
-            ${node.lineCount ? `<div style="color: #cbd5e1; font-size: 10px;">Lines: ${node.lineCount}</div>` : ""}
-            ${node.fileCount ? `<div style="color: #a78bfa; font-size: 10px;">Contained files: ${node.fileCount}</div>` : ""}
+          <div style="background: rgba(20, 20, 20, 0.95); padding: 10px 14px; border: 1px solid #262626; border-radius: 12px; font-family: ui-monospace, monospace; font-size: 11px; color: #f4f4f5; box-shadow: 0 10px 30px rgba(0,0,0,0.7);">
+            <div style="font-weight: bold; color: ${node.color || '#f54e26'}; font-size: 12px;">${node.name}</div>
+            <div style="color: #a1a1aa; font-size: 10px; margin-top: 3px;">${node.type?.toUpperCase()} • ${node.path}</div>
+            ${node.language ? `<div style="color: #f54e26; font-size: 10px; margin-top: 3px;">Language: ${node.language}</div>` : ""}
+            ${node.lineCount ? `<div style="color: #e4e4e7; font-size: 10px;">Lines: ${node.lineCount}</div>` : ""}
+            ${node.fileCount ? `<div style="color: #f9bf28; font-size: 10px;">Contained files: ${node.fileCount}</div>` : ""}
           </div>
         `}
         onNodeHover={(node: any) => setHoveredNode(node)}
@@ -511,215 +515,223 @@ export default function ObsidianConstellationGraph({
         }
         linkDirectionalParticleSpeed={0.006}
         linkDirectionalParticleWidth={2}
-        linkDirectionalParticleColor={(link: any) => (link.type === "calls" ? "#f43f5e" : "#38bdf8")}
-        backgroundColor="#090d16"
+        linkDirectionalParticleColor={(link: any) => (link.type === "calls" ? "#f54e26" : "#f9bf28")}
+        backgroundColor="#0d0d0d"
         showNavInfo={false}
       />
 
       {/* Floating Top Control HUD */}
       <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
-        {/* Left: Search & Filter Toolbar */}
-        <div className="flex items-center gap-2 pointer-events-auto flex-wrap">
-          {/* Search Box */}
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500" />
-            <input
-              type="text"
-              placeholder="Search 3D constellation (Enter to fly)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              className="pl-8.5 pr-8 py-1.5 w-64 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:border-indigo-500 shadow-xl backdrop-blur-md"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-300"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+        {/* Left: Search & Filter Toolbar (hidden during tour) */}
+        {!isTourActive ? (
+          <div className="flex items-center gap-2 pointer-events-auto flex-wrap">
+            {/* Search Box */}
+            <div className="relative">
+              <Search className="absolute left-3.5 top-3 w-3.5 h-3.5 text-zinc-500" />
+              <input
+                type="text"
+                placeholder="Search 3D constellation (Enter to fly)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="pl-9 pr-8 py-2 w-64 rounded-full bg-[#141414]/90 border border-[#282828] text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-[#f54e26] shadow-xl backdrop-blur-md"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-2.5 text-zinc-500 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
 
-          {/* Node Type Pills */}
-          <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-xl p-0.5 text-[11px] font-mono shadow-xl backdrop-blur-md">
-            <button
-              onClick={() => setNodeTypeFilter("all")}
-              className={`px-2.5 py-1 rounded-lg transition-colors ${
-                nodeTypeFilter === "all"
-                  ? "bg-indigo-600 text-white font-semibold"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setNodeTypeFilter("directory")}
-              className={`px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 ${
-                nodeTypeFilter === "directory"
-                  ? "bg-indigo-600 text-white font-semibold"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Folder className="w-3 h-3 text-indigo-400" />
-              <span>Folders</span>
-            </button>
-            <button
-              onClick={() => setNodeTypeFilter("file")}
-              className={`px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 ${
-                nodeTypeFilter === "file"
-                  ? "bg-indigo-600 text-white font-semibold"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <FileCode className="w-3 h-3 text-sky-400" />
-              <span>Files</span>
-            </button>
-          </div>
-
-          {/* Language Filter Pills */}
-          {availableLanguages.length > 0 && (
-            <div className="hidden lg:flex items-center bg-slate-900/90 border border-slate-800 rounded-xl p-0.5 text-[11px] font-mono shadow-xl backdrop-blur-md">
+            {/* Node Type Pills */}
+            <div className="flex items-center bg-[#141414]/90 border border-[#282828] rounded-full p-1 text-[11px] font-mono shadow-xl backdrop-blur-md">
               <button
-                onClick={() => setSelectedLanguage("ALL")}
-                className={`px-2 py-1 rounded-lg transition-colors ${
-                  selectedLanguage === "ALL"
-                    ? "bg-indigo-600 text-white font-semibold"
-                    : "text-slate-400 hover:text-slate-200"
+                onClick={() => setNodeTypeFilter("all")}
+                className={`px-3 py-1 rounded-full transition-colors cursor-pointer ${
+                  nodeTypeFilter === "all"
+                    ? "bg-[#f54e26] text-white font-semibold"
+                    : "text-zinc-400 hover:text-white"
                 }`}
               >
                 All
               </button>
-              {availableLanguages.map((lang) => (
+              <button
+                onClick={() => setNodeTypeFilter("directory")}
+                className={`px-3 py-1 rounded-full transition-colors flex items-center gap-1 cursor-pointer ${
+                  nodeTypeFilter === "directory"
+                    ? "bg-[#f54e26] text-white font-semibold"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                <Folder className="w-3 h-3 text-[#f9bf28]" />
+                <span>Folders</span>
+              </button>
+              <button
+                onClick={() => setNodeTypeFilter("file")}
+                className={`px-3 py-1 rounded-full transition-colors flex items-center gap-1 cursor-pointer ${
+                  nodeTypeFilter === "file"
+                    ? "bg-[#f54e26] text-white font-semibold"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                <FileCode className="w-3 h-3 text-[#f54e26]" />
+                <span>Files</span>
+              </button>
+            </div>
+
+            {/* Language Filter Pills */}
+            {availableLanguages.length > 0 && (
+              <div className="hidden lg:flex items-center bg-[#141414]/90 border border-[#282828] rounded-full p-1 text-[11px] font-mono shadow-xl backdrop-blur-md">
                 <button
-                  key={lang}
-                  onClick={() => setSelectedLanguage(lang)}
-                  className={`px-2 py-1 rounded-lg transition-colors ${
-                    selectedLanguage === lang
-                      ? "bg-indigo-600 text-white font-semibold"
-                      : "text-slate-400 hover:text-slate-200"
+                  onClick={() => setSelectedLanguage("ALL")}
+                  className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+                    selectedLanguage === "ALL"
+                      ? "bg-[#f54e26] text-white font-semibold"
+                      : "text-zinc-400 hover:text-white"
                   }`}
                 >
-                  {lang}
+                  All
                 </button>
-              ))}
-            </div>
-          )}
+                {availableLanguages.map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => setSelectedLanguage(lang)}
+                    className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+                      selectedLanguage === lang
+                        ? "bg-[#f54e26] text-white font-semibold"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {lang}
+                  </button>
+                ))}
+              </div>
+            )}
 
-          {/* --- IDEA #4: 30-SECOND GUIDED TOUR HERO BUTTON --- */}
-          {!isTourActive ? (
+            {/* 30-SECOND GUIDED TOUR HERO BUTTON */}
             <button
               onClick={startGuidedTour}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 via-indigo-600 to-violet-600 hover:from-cyan-500 hover:to-violet-500 text-white text-xs font-mono font-semibold shadow-lg shadow-indigo-600/30 border border-indigo-400/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-[#f54e26] hover:bg-[#ff623d] text-white text-xs font-mono font-semibold shadow-lg shadow-[#f54e26]/30 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               title="Start automated 30-second architectural walkthrough"
             >
-              <Play className="w-3.5 h-3.5 fill-current text-cyan-200" />
+              <Play className="w-3.5 h-3.5 fill-current text-white" />
               <span>30s Guided Tour</span>
-              <Sparkles className="w-3 h-3 text-cyan-300 animate-pulse" />
+              <Sparkles className="w-3 h-3 text-white fill-white animate-pulse" />
             </button>
-          ) : (
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 pointer-events-auto">
             <button
               onClick={exitGuidedTour}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-mono font-semibold transition-all"
+              className="flex items-center space-x-2 px-4 py-2 rounded-full bg-[#141414]/95 hover:bg-[#1f1f1f] text-white border border-[#f54e26]/50 text-xs font-mono font-semibold backdrop-blur-md shadow-xl transition-all cursor-pointer"
             >
-              <X className="w-3.5 h-3.5" />
-              <span>Exit Tour</span>
+              <X className="w-3.5 h-3.5 text-[#f54e26]" />
+              <span>Exit Guided Tour</span>
             </button>
-          )}
-        </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#141414]/95 border border-[#282828] text-[11px] font-mono text-zinc-400 backdrop-blur-md shadow-md">
+              <span className="w-2 h-2 rounded-full bg-[#f54e26] animate-pulse" />
+              <span>30s Cinematic Tour Active</span>
+            </div>
+          </div>
+        )}
 
-        {/* Right: 3D Control Actions */}
-        <div className="flex items-center gap-1.5 pointer-events-auto bg-slate-900/90 border border-slate-800 rounded-xl p-1 shadow-xl backdrop-blur-md">
-          {/* Auto Rotate Galaxy */}
-          <button
-            onClick={() => setAutoRotate(!autoRotate)}
-            title={autoRotate ? "Pause 3D rotation" : "Auto-orbit galaxy in 3D"}
-            className={`p-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-colors ${
-              autoRotate
-                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-            }`}
-          >
-            {autoRotate ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">Orbit</span>
-          </button>
+        {/* Right: 3D Control Actions (hidden during tour) */}
+        {!isTourActive && (
+          <div className="flex items-center gap-1.5 pointer-events-auto bg-[#141414]/90 border border-[#282828] rounded-full p-1.5 shadow-xl backdrop-blur-md">
+            {/* Auto Rotate Galaxy */}
+            <button
+              onClick={() => setAutoRotate(!autoRotate)}
+              title={autoRotate ? "Pause 3D rotation" : "Auto-orbit galaxy in 3D"}
+              className={`px-2.5 py-1.5 rounded-full text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer ${
+                autoRotate
+                  ? "bg-[#f54e26]/20 text-[#f54e26] border border-[#f54e26]/40"
+                  : "text-zinc-400 hover:text-white hover:bg-[#202020]"
+              }`}
+            >
+              {autoRotate ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">Orbit</span>
+            </button>
 
-          {/* Toggle Flowing Particles */}
-          <button
-            onClick={() => setShowParticles(!showParticles)}
-            title={showParticles ? "Hide data stream particles" : "Show data stream particles"}
-            className={`p-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-colors ${
-              showParticles
-                ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/40"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Particles</span>
-          </button>
+            {/* Toggle Flowing Particles */}
+            <button
+              onClick={() => setShowParticles(!showParticles)}
+              title={showParticles ? "Hide data stream particles" : "Show data stream particles"}
+              className={`p-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-colors ${
+                showParticles
+                  ? "bg-[#f54e26]/20 text-[#f54e26] border border-[#f54e26]/40"
+                  : "text-zinc-400 hover:text-white hover:bg-[#202020]"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Particles</span>
+            </button>
 
-          {/* Toggle 3D Labels */}
-          <button
-            onClick={() => setShowLabels(!showLabels)}
-            title={showLabels ? "Hide text labels" : "Show 3D text labels"}
-            className={`p-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-colors ${
-              showLabels
-                ? "bg-violet-500/20 text-violet-300 border border-violet-500/40"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-            }`}
-          >
-            {showLabels ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">Labels</span>
-          </button>
+            {/* Toggle 3D Labels */}
+            <button
+              onClick={() => setShowLabels(!showLabels)}
+              title={showLabels ? "Hide text labels" : "Show 3D text labels"}
+              className={`p-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-colors ${
+                showLabels
+                  ? "bg-[#f54e26]/20 text-[#f54e26] border border-[#f54e26]/40"
+                  : "text-zinc-400 hover:text-white hover:bg-[#202020]"
+              }`}
+            >
+              {showLabels ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">Labels</span>
+            </button>
 
-          <div className="w-[1px] h-4 bg-slate-800 my-auto mx-0.5" />
+            <div className="w-[1px] h-4 bg-[#2a2a2a] my-auto mx-0.5" />
 
-          {/* Zoom In */}
-          <button
-            onClick={handleZoomIn}
-            title="Zoom into 3D cosmos"
-            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <ZoomIn className="w-3.5 h-3.5" />
-          </button>
+            {/* Zoom In */}
+            <button
+              onClick={handleZoomIn}
+              title="Zoom into 3D cosmos"
+              className="p-1.5 rounded-full hover:bg-[#202020] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
 
-          {/* Zoom Out */}
-          <button
-            onClick={handleZoomOut}
-            title="Zoom out from 3D cosmos"
-            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <ZoomOut className="w-3.5 h-3.5" />
-          </button>
+            {/* Zoom Out */}
+            <button
+              onClick={handleZoomOut}
+              title="Zoom out from 3D cosmos"
+              className="p-1.5 rounded-full hover:bg-[#202020] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
 
-          {/* Fit to View */}
-          <button
-            onClick={handleZoomToFit}
-            title="Fit 3D constellation to viewport"
-            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-          </button>
+            {/* Fit to View */}
+            <button
+              onClick={handleZoomToFit}
+              title="Fit 3D constellation to viewport"
+              className="p-1.5 rounded-full hover:bg-[#202020] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
 
-          {/* Reset Camera */}
-          <button
-            onClick={handleResetCamera}
-            title="Reset 3D camera"
-            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-        </div>
+            {/* Reset Camera */}
+            <button
+              onClick={handleResetCamera}
+              title="Reset 3D camera"
+              className="p-1.5 rounded-full hover:bg-[#202020] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* --- IDEA #4: CINEMATIC ARCHITECTURE STORYTELLER HUD (FLOATING BANNER) --- */}
       {isTourActive && currentStep && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-2xl px-4 animate-in fade-in slide-in-from-bottom-4 duration-300 font-mono">
-          <div className="p-5 rounded-2xl bg-slate-950/95 border border-cyan-500/40 backdrop-blur-2xl shadow-2xl shadow-cyan-500/10 space-y-3.5 relative overflow-hidden">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-xl px-4 animate-in fade-in slide-in-from-bottom-4 duration-300 font-mono">
+          <div className="p-5 rounded-2xl bg-[#141414]/95 border border-[#f54e26]/40 backdrop-blur-2xl shadow-2xl shadow-[#f54e26]/10 space-y-3 relative overflow-hidden">
             {/* Countdown Progress Bar */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-slate-800">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-[#222222]">
               <div 
-                className="h-full bg-gradient-to-r from-cyan-400 to-indigo-500 transition-all duration-75 ease-linear"
+                className="h-full bg-[#f54e26] transition-all duration-75 ease-linear"
                 style={{ width: `${tourProgress}%` }}
               />
             </div>
@@ -727,19 +739,19 @@ export default function ObsidianConstellationGraph({
             {/* Stage Badge & Step Count */}
             <div className="flex items-center justify-between pt-1">
               <div className="flex items-center space-x-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
-                <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#f54e26] animate-pulse" />
+                <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-[#f54e26]/20 text-[#f54e26] border border-[#f54e26]/30">
                   {currentStep.badge}
                 </span>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-zinc-400">
                   {currentStep.stageName}
                 </span>
               </div>
-              <div className="flex items-center space-x-2 text-[11px] text-slate-400">
+              <div className="flex items-center space-x-2 text-[11px] text-zinc-400">
                 <span>Step {tourStepIndex + 1} of {tourSteps.length}</span>
                 <button
                   onClick={exitGuidedTour}
-                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition"
+                  className="p-1 rounded-lg hover:bg-[#202020] text-zinc-400 hover:text-white transition cursor-pointer"
                   title="Close tour"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -752,40 +764,40 @@ export default function ObsidianConstellationGraph({
               <h3 className="text-sm font-bold text-white flex items-center space-x-2">
                 <span>{currentStep.title}</span>
               </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-xs text-zinc-300 leading-relaxed">
                 {currentStep.description}
               </p>
             </div>
 
             {/* Compiler AST Insight */}
-            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-white/5 text-[11px] text-cyan-300 flex items-center space-x-2">
-              <Compass className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <div className="p-2.5 rounded-xl bg-[#1a1a1a] border border-[#282828] text-[11px] text-[#f9bf28] flex items-center space-x-2">
+              <Compass className="w-3.5 h-3.5 text-[#f9bf28] shrink-0" />
               <span className="truncate">{currentStep.architecturalInsight}</span>
             </div>
 
             {/* Interactive Player Controls */}
-            <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <div className="flex items-center justify-between pt-1 border-t border-[#222222]">
               <div className="flex items-center space-x-1.5">
                 <button
                   onClick={() => navigateToTourStep(tourStepIndex - 1)}
                   disabled={tourStepIndex === 0}
-                  className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition"
+                  className="p-1.5 rounded-lg bg-[#1a1a1a] border border-[#282828] text-zinc-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
                   title="Previous stage"
                 >
                   <SkipBack className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setIsTourPaused(!isTourPaused)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 hover:text-white text-xs font-semibold flex items-center space-x-1.5 transition"
+                  className="px-3 py-1.5 rounded-lg bg-[#1a1a1a] border border-[#282828] text-zinc-200 hover:text-white text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer"
                 >
                   {isTourPaused ? (
                     <>
-                      <Play className="w-3 h-3 fill-current text-cyan-400" />
+                      <Play className="w-3 h-3 fill-current text-[#00a86b]" />
                       <span>Resume</span>
                     </>
                   ) : (
                     <>
-                      <Pause className="w-3 h-3 fill-current text-amber-400" />
+                      <Pause className="w-3 h-3 fill-current text-[#f9bf28]" />
                       <span>Pause</span>
                     </>
                   )}
@@ -793,7 +805,7 @@ export default function ObsidianConstellationGraph({
                 <button
                   onClick={() => navigateToTourStep(tourStepIndex + 1)}
                   disabled={tourStepIndex === tourSteps.length - 1}
-                  className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition"
+                  className="p-1.5 rounded-lg bg-[#1a1a1a] border border-[#282828] text-zinc-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
                   title="Next stage"
                 >
                   <SkipForward className="w-3.5 h-3.5" />
@@ -804,9 +816,12 @@ export default function ObsidianConstellationGraph({
                 <button
                   onClick={() => {
                     const node = graphData.nodes.find((n) => n.id === currentStep.targetNodeId);
-                    if (node) onSelectNode(node as ObsidianNode);
+                    if (node) {
+                      exitGuidedTour();
+                      onSelectNode(node as ObsidianNode);
+                    }
                   }}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center space-x-1 transition"
+                  className="text-xs text-[#f54e26] hover:text-[#ff623d] flex items-center space-x-1 transition cursor-pointer"
                 >
                   <span>Inspect Code</span>
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -817,55 +832,59 @@ export default function ObsidianConstellationGraph({
         </div>
       )}
 
-      {/* Bottom Left 3D Legend HUD */}
-      <div className="absolute bottom-4 left-4 z-20 pointer-events-none">
-        <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800/80 shadow-2xl backdrop-blur-md font-mono text-[11px] text-slate-300 space-y-1.5 pointer-events-auto">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-100 border-b border-slate-800/60 pb-1">
-            <Orbit className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
-            <span>3D Obsidian Cosmos</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-              react-force-graph-3d
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-400">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500" />
-            <span>Directory Hub (Cluster Center)</span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-400">
-            <span className="w-2 h-2 rounded-full bg-sky-400 shadow-sm shadow-sky-400" />
-            <span>Source File (Language Colored)</span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-pink-400" />
-            <span>Symbol / Method Satellite</span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-400">
-            <span className="w-3 h-0.5 bg-sky-400 inline-block" />
-            <span>Flowing Data Packets (Imports & Calls)</span>
-          </div>
-          <div className="pt-1 text-[10px] text-slate-500 border-t border-slate-800/60">
-            Left-Click: Rotate 3D • Right-Click: Pan • Scroll: Zoom
+      {/* Bottom Left 3D Legend HUD (hidden during tour) */}
+      {!isTourActive && (
+        <div className="absolute bottom-4 left-4 z-20 pointer-events-none">
+          <div className="p-3.5 rounded-2xl bg-[#141414]/90 border border-[#282828] shadow-2xl backdrop-blur-md font-mono text-[11px] text-zinc-300 space-y-1.5 pointer-events-auto">
+            <div className="flex items-center gap-2 text-xs font-semibold text-white border-b border-[#282828] pb-1.5">
+              <Orbit className="w-3.5 h-3.5 text-[#f54e26] animate-spin" />
+              <span>3D Obsidian Cosmos</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-[#f54e26]/10 text-[#f54e26] border border-[#f54e26]/30">
+                react-force-graph-3d
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-400">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#f54e26] shadow-sm shadow-[#f54e26]" />
+              <span>Directory Hub (Cluster Center)</span>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-400">
+              <span className="w-2 h-2 rounded-full bg-[#f9bf28] shadow-sm shadow-[#f9bf28]" />
+              <span>Source File (Language Colored)</span>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00a86b]" />
+              <span>Symbol / Method Satellite</span>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-400">
+              <span className="w-3 h-0.5 bg-[#f54e26] inline-block" />
+              <span>Flowing Data Packets (Imports & Calls)</span>
+            </div>
+            <div className="pt-1 text-[10px] text-zinc-500 border-t border-[#282828]">
+              Left-Click: Rotate 3D • Right-Click: Pan • Scroll: Zoom
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Bottom Right 3D Stats HUD */}
-      <div className="absolute bottom-4 right-4 z-20 pointer-events-none">
-        <div className="px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800/80 shadow-xl backdrop-blur-md font-mono text-[11px] text-slate-400 flex items-center gap-2.5">
-          <span className="flex items-center gap-1.5">
-            <Box className="w-3 h-3 text-indigo-400" />
-            <span>
-              <strong className="text-slate-200">{graphData.nodes.length}</strong> 3D Nodes
+      {/* Bottom Right 3D Stats HUD (hidden during tour) */}
+      {!isTourActive && (
+        <div className="absolute bottom-4 right-4 z-20 pointer-events-none">
+          <div className="px-3.5 py-2 rounded-full bg-[#141414]/90 border border-[#282828] shadow-xl backdrop-blur-md font-mono text-[11px] text-zinc-400 flex items-center gap-2.5">
+            <span className="flex items-center gap-1.5">
+              <Box className="w-3.5 h-3.5 text-[#f54e26]" />
+              <span>
+                <strong className="text-white">{graphData.nodes.length}</strong> 3D Nodes
+              </span>
             </span>
-          </span>
-          <span>•</span>
-          <span>
-            <strong className="text-slate-200">{graphData.links.length}</strong> Edges
-          </span>
-          <span>•</span>
-          <span className="text-emerald-400">60 FPS WebGL</span>
+            <span>•</span>
+            <span>
+              <strong className="text-white">{graphData.links.length}</strong> Edges
+            </span>
+            <span>•</span>
+            <span className="text-[#00a86b]">60 FPS WebGL</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
